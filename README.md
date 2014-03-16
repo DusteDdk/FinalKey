@@ -2,6 +2,7 @@ Firmware for the Final Key - A hardware password manager for Linux, Windows and 
 --
 This software comes without any kind of warranty, and nobdy is responsible.
 Hacks are based on ARDUINO 1.5.5 BETA 2013.11.28
+Credits:
 --
 Directory			- Description		- Author		- License	- URL
 FinalKey 			- Firmware for FinalKey	- DusteD		- WTFPL		- http://cyberstalker.dk/finalkey/
