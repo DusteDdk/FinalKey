@@ -16,7 +16,7 @@
 #define CMD_FIRE_USER 0
 #define CMD_FIRE_PASS 1
 #define CMD_FIRE_BOTH 2
-#define CMD_SEARCH 3
+#define CMD_SHOW_BOTH 3
 #define CMD_ACCOUNT_LIST_NEXT 4
 #define CMD_ACCOUNT_LIST_PREV 5
 #define CMD_LOCK_DEV 6
@@ -208,7 +208,7 @@ uint8_t btnWait( int timeOut )
   {
     if( (timeOut % 1000)==0 && timeOut > 0)
     {
-      ptxt("\r");txt((int)(timeOut/1000));ptxt(" #");
+      ptxt("\r");txt((int)(timeOut/1000));ptxt(" # ");
     }
     
     delay(1);
@@ -435,9 +435,28 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
   {
     lastEntryCmd=what;
     lastEntryNum=entryNum;
-    ptxt("\r\n");
+    ptxtln("\r\n");    
+    switch(what)
+    {
+      case CMD_FIRE_BOTH:
+        ptxt("[U][S][P] ");
+        break;
+      case CMD_FIRE_USER:
+        ptxt("[U] ");
+        break;
+      case CMD_FIRE_PASS:
+        ptxt("[P] ");
+        break;
+      case CMD_SHOW_BOTH:
+        ptxt("[SHOW] ");
+        break;
+      default:
+        ptxt("[ERROR]");
+        break;
+    }
     txt(eName);
-    ptxt(" ready");
+    ptxt(" ?\r\n");
+    
     if(noWait || btnWait(BTN_TIMEOUT_FIRE))
     {
       ES.getEntry(entryNum, &entry);
@@ -471,6 +490,24 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
         {
           Keyboard.write(10);
           ptxt(" [E]");
+        }
+        
+        if( what == CMD_SHOW_BOTH )
+        {
+          ptxt("\r\nAccount: ");          
+          if(entryNum < 16)
+          {
+            Serial.write('0');
+          }          
+          Serial.print(entryNum,HEX);
+          Serial.print(" - ");
+          Serial.print(eName);
+          
+          ptxt("\r\n  Username: ");
+          Serial.print( entry.data );
+          ptxt("\r\n  Password: ");
+          Serial.print( (entry.data)+entry.passwordOffset );
+          ptxt("\r\n");
         }
       }
       ptxt(" [done]\r\n>");
@@ -926,7 +963,7 @@ void search(uint8_t cmd)
   char ueName[32];
   uint8_t slen, elen, hits=0, fire;
 
-  ptxtln("\rSearch:     ");
+  ptxtln("\rSearch:      ");
 
   if( getStr( str, 31, 1 ) )
   {
@@ -965,22 +1002,19 @@ void search(uint8_t cmd)
         }
       }
     }
-    if(cmd!=CMD_SEARCH)
+
+    switch(hits)
     {
-      switch(hits)
-      {
-        case 1:
-          fireEntry(cmd, fire, 0 );
-        break;
-        case 0:
-          ptxtln("[not found]\r\n>");
-        break;
-        default:
-          ptxt("[keyword ambiguous]\r\n>");
-        break;
-      }
-    } else {
-      ptxt("[Found ");txt(hits);ptxt("]\r\n>");
+      case 1:
+        fireEntry(cmd, fire, 0 );
+      break;
+      case 0:
+        ptxt("[not found]\r\n>");
+      break;
+      default:
+        ptxt("[Found ");txt(hits);ptxt("]\r\n>");
+        ptxt("[keyword ambiguous]\r\n>");
+      break;
     }
     return;
   }
@@ -1094,7 +1128,7 @@ void loop() {
          if(cmd[0]==' ')
          {
            cls();
-           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n r  Repeat last\r\n s  Search\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n>");
+           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n s  Show\r\n r  Repeat last\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n ENTER  Search\r\n>");
            p=0;
          } else if(cmd[0]=='u')
          {
@@ -1108,7 +1142,9 @@ void loop() {
            p=0;           
          } else if( cmd[0] == 's' )
          {
-           search(CMD_SEARCH);
+           Serial.write('%');
+           fireEntry(CMD_SHOW_BOTH, collectNum(), 0 );
+
            p=0;
          } else if( cmd[0] == 'j' )
          {
@@ -1132,7 +1168,7 @@ void loop() {
          } else if( cmd[0] == 'h' )
          {
            cls();
-           ptxt("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xm  New macro\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xu  Choose # macro\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key.\r\n % = Number  : = Text Input\r\n ENT = ENTER\r\n ------------\r\n>");
+           ptxt("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTs  Search and show\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xm  New macro\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xu  Choose # macro\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key.\r\n % = Number  : = Text Input\r\n ENT = ENTER\r\n ------------\r\n>");
            p=0;
          } else if( isHex(cmd[0]) )
          {
@@ -1142,7 +1178,7 @@ void loop() {
            cmdType=CMD_EXTENDED;
          } else if( cmd[0] == 13 )
          {
-           ptxt("\r[ENT/u/p]:");
+           ptxt("\r[ENT/u/p/s]:");
            cmdType=CMD_SEARCH_TRIG;
          }else if( cmd[0] == 'X' )
          {
@@ -1243,6 +1279,9 @@ void loop() {
            } else if( cmd[1] == 13 )
            {
              search(CMD_FIRE_BOTH);
+           } else if( cmd[1] == 's' )
+           {
+             search(CMD_SHOW_BOTH);
            } else {
              ptxt("\r\n[abort]\r\n>");
            }
