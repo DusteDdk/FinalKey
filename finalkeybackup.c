@@ -1,3 +1,62 @@
+/*
+ * License: WTFPL ( http://www.wtfpl.net/ )
+ * Backup tool for creating and restoring backups.
+ * The output file is identical to the encrypted eeprom, except for one
+ * additional byte crc8 checksum every 32 bytes.
+ * Even though the output file is encrypted, it is strongly adviced to store
+ * this file in a safe place, such of a dedicated USB stick/memory card or
+ * burn it to another Final Key before deleting the file.
+ * 
+ * An example output of such a backup file is available for download at:
+ * http://cyberstalker.dk/finalkey/hacking/ - At the time of committing this,
+ * that file is not known to have been broken, so at least some security can be
+ * assumed.
+ * 
+ * This utility may result in loss of data in the following ways:
+ * 	You override an existing backup file.
+ * 	You override a Final Key which contained data that was not backed-up.
+ * 	You restore a Final Key with an corrupt/invalid key file.
+ * 	You restore a backup with another firmware identifier.
+ * 		At the time of writing [FinalKey2] is the correct identifier.
+ * 	You're generally careless/not knowing what you're doing.
+ * 
+ * 
+ * This utility may brick your device in the following ways:
+ * 	You restore an image to which you do not know the password.
+ * 	The restore-operation is interrupted at an unlucky time.
+ * 		(After writing byte 13, before writing byte 124,
+ * 		and then only if restoring an image with different password).
+ * 
+ * 
+ * Creating backups (backing up your Final Key):
+ *	You need to know one password, the one which unlocks the key.
+ * 	./fkbck.bin backup mybackup.bin
+ * 	That saves your backup to the file "mybackup.bin" I suggest you
+ * 	come up with a more fitting name, maybe including the date.
+ * 
+ * Restoring backups (writing a backup to a Final Key):
+ * 	You need to know two passwords, which may be identical:
+ * 		The password which unlocks the key that you wish to overwrite.
+ * 		The password which unlocks the image that you wish to restore.
+ * 	If you do not know the password which unlocks the key, you can't begin
+ * 	the restore-process, and if you do not know the password which unlocks
+ * 	the image that you write to the key, you won't be able to unlock it.
+ * 	./fkbck.bin restore mybackup.bin
+ * 	This writes mybackup.bin onto the key, all existing data on that key
+ * 	will be overwritten. So think about it.
+ * 	
+ * How to build:
+ * 	To compile, you need a C compiler, and the standard and posix libs.
+ *
+ * 	gcc --std=c99 -o ./fkbck.bin ./finalkeybackup.c 
+ * 
+ * With heavy heart and much shame, follows a late night writing by
+ * Jimmy Christensen, this could be done better, faster and smarter and safer,
+ * but I decided to stop when it worked, sorry about that, if you want to,
+ * improve it and send me a pull-request on github.
+ * 
+ */
+
 #define _BSD_SOURCE	// Shut up about cfmakeraw
 #include <stdio.h>
 #include <stdlib.h>
