@@ -34,21 +34,36 @@
 #define CMD_ROBOT 18
 #define CMD_SEARCH_TRIG 19
 
-
+//Timeout time (in milliseconds) for things that require a bit extra attention from the user.
 #define BTN_TIMEOUT_IMPORTANT 5000
+//Timeout for other stuff
 #define BTN_TIMEOUT_FIRE 30000
+//Wait forever (and ever)
 #define BTN_TIMEOUT_NO_TIMEOUT -1
+//How many ms should the button be held before it means "abort", I like this one.
+#define BTN_HOLD_TIME_FOR_ABORT 700
 
 //fireEntry will set these
 uint8_t lastEntryCmd=0, lastEntryNum=0;
 
 const char clsStr[] = { 27, '[', '2','J',27,'[','H',0 };
 
+//Actually saves a bit of memory to have this function and the char array, instead of printing it each time, clears the screen, don't abuse.
 void cls()
 {
   Serial.print(clsStr);
 }
 
+void clearSerialInput()
+{
+  while(Serial.available())
+  {
+    Serial.read();
+    delay(20); //Wait a bit, host may have more buffered.
+  }  
+}
+
+//These are the characters that can be used in passwords, they are arranged in this way for easy implementation of the optional "use specials" feature of the password generator.
 const char passChars[] = {
 '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E',
 'F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T',
@@ -151,8 +166,10 @@ void getKbLayout()
 }
 
 //User-friendly format process.
+//This function must not exit before a successfull format.
 void format()
 {
+  //Two imput buffers, for easy password comparison.
   char bufa[33];
   char bufb[33];
   ptxtln("Choose password (1-32)");
@@ -190,7 +207,7 @@ void format()
   ES.format( (byte*)bufa, bufb ); 
 }
 
-#define BTN_HOLD_TIME_FOR_ABORT 700
+
 //Waits for button to be pressed, returns either BTN_NO (for timeout and aborted) or BTN_YES
 uint8_t btnWait( int timeOut )
 {
@@ -219,6 +236,8 @@ uint8_t btnWait( int timeOut )
       onTime=0;
       state=!state;
     }
+    
+    //Button pin uses internal pullup, switch drags pin to gnd.
     if( !digitalRead(btnPin) )
     {
       btnAbortTimeLeft--;
@@ -235,14 +254,12 @@ uint8_t btnWait( int timeOut )
       timeOut--;
     }
   }
+  //Blink the led
   digitalWrite(ledPin, state);
 
   
 
-  while(Serial.available())
-  {
-    Serial.read();
-  }
+  clearSerialInput();
   
   if(!Serial)
   {
@@ -468,10 +485,7 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
       } else {
       
         //Empty serial input buffer
-        while( Serial.available() )
-        {
-          Serial.read();
-        }
+        clearSerialInput();
         
         if( what == CMD_FIRE_BOTH || what == CMD_FIRE_USER )
         {
@@ -522,11 +536,7 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
         //Empty serial input buffer (in case user triggered it to write into the finalkey)
         if( Serial.available() )
         {
-          while( Serial.available() )
-          {
-            Serial.read();
-            delay(20); //Delay here because flowcontrol.
-          }       
+          clearSerialInput();     
           ptxt("\r\n[ERROR] Wrong window, try again.");
           //Wohoo! A GOTO!! YES! FINALLY! (I could make it recursive, and risk stack overflow, or make a nasty while around the function, but I decided this was less noisy)
           goto REPEAT_FIRE;
@@ -547,6 +557,7 @@ uint8_t getOneChar()
   {
     if(Serial.available())
     {
+      //Handle backspace (delete last character)
       if( Serial.peek() == 8 )
       {
         Serial.write(8);
@@ -964,7 +975,7 @@ void entryList(int8_t dir)
  Serial.write('>');
 }
 
-
+//Convert a string to uppercase for easy comparison by the search feature.
 void strToUpper(char* str)
 {
 
@@ -1133,6 +1144,7 @@ void loop() {
          Serial.write(cmd[p]);
        }
        
+       //Handle backspace, we abort whatever was going on.
        if(cmd[p]==8)
        {
         Serial.write('\r');
