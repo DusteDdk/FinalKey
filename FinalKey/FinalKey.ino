@@ -174,7 +174,7 @@ void format()
       }
     }
     if(fail)
-      ptxtln("\r\n[error]");
+      ptxtln("\r\n[ERROR]");
   }
   fail=1;
   while(fail)
@@ -430,7 +430,7 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
     ptxt("[abort]\r\n>");
     return;
   }
-  
+  REPEAT_FIRE:
   if( ES.getTitle(entryNum, eName ) )
   {
     lastEntryCmd=what;
@@ -467,6 +467,12 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
         ptxt(" [M]");
       } else {
       
+        //Empty serial input buffer
+        while( Serial.available() )
+        {
+          Serial.read();
+        }
+        
         if( what == CMD_FIRE_BOTH || what == CMD_FIRE_USER )
         {
           Keyboard.print( entry.data );
@@ -492,6 +498,8 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
           ptxt(" [E]");
         }
         
+
+        
         if( what == CMD_SHOW_BOTH )
         {
           ptxt("\r\nAccount: ");          
@@ -510,7 +518,21 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
           ptxt("\r\n");
         }
       }
-      ptxt(" [done]\r\n>");
+      
+        //Empty serial input buffer (in case user triggered it to write into the finalkey)
+        if( Serial.available() )
+        {
+          while( Serial.available() )
+          {
+            Serial.read();
+            delay(20); //Delay here because flowcontrol.
+          }       
+          ptxt("\r\n[ERROR] Wrong window, try again.");
+          //Wohoo! A GOTO!! YES! FINALLY! (I could make it recursive, and risk stack overflow, or make a nasty while around the function, but I decided this was less noisy)
+          goto REPEAT_FIRE;
+        } else {
+          ptxt(" [done]\r\n>");
+        }
     } else {
       ptxt("[abort]\r\n>");
     }
