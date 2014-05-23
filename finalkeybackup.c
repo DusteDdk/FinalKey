@@ -58,6 +58,7 @@
  */
 
 #define _BSD_SOURCE	// Shut up about cfmakeraw
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -243,11 +244,65 @@ int main(int argc, char** argv)
   }
   
    struct stat f_st;
-   if( stat( devFile, &f_st ) != 0 )
+   
+   
+   //We want to make sure we start with a known state
+   //So we force people to disconnect and reconnect it.
+   if( lstat( devFile, &f_st ) == 0 )
    {
-     printf("Error: File not found '%s'\n", devFile );
-     return(1);
-   }
+      //Seems like a good place to check if anyone has opened the device already.
+      //We don't expect lsof or grep to be there, and if it's not, we still run.
+      char cmdStr[128];
+      char realPath[8192]; //Almost chosen randomly, 4096 seems to be an acceptable max path length so this should just fine.
+      
+      if( realpath( devFile, realPath ) == NULL )
+      {
+	printf("Error: Could not resolve '%s'\n", devFile);
+	return(1);
+      }
+      
+      sprintf( cmdStr, "lsof -n | grep %s 2> /dev/null", realPath );
+      FILE* fpCmd = popen( cmdStr, "r" );
+      if( fpCmd )
+      {
+	if(fgets(buf, 32, fpCmd) != NULL)
+	{
+	  printf("\nError: The Final Key is in use by another application.\n      Please close other applications and try again.\n");
+	  pclose(fpCmd);
+	  return(1);
+	}
+	
+	pclose(fpCmd);
+      } else {
+	printf("It it advised that you install the 'lsof' package before using this program.\n");
+      }
+
+     printf("\nPlease unplug The Final Key now.\n");
+     
+     while( stat( devFile, &f_st ) == 0 )
+     {
+       sleep(1);
+     }
+     
+     printf("Thank you, please connect The Final Key again.\n");
+   } else {
+     printf("Please connect The Final Key.\n");
+   }    
+   
+
+  //Wait for user to insert the key
+  int timeOut=30;
+  while( stat( devFile, &f_st ) != 0 )
+  {
+    timeOut--;
+    if(timeOut < 0)
+    {
+      printf("Error: Could not connect to %s\n", devFile);
+      return(1);
+    }
+    sleep(1);
+  }
+   
  
   memset(psw,0,sizeof(psw));
   
