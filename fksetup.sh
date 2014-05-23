@@ -25,6 +25,11 @@ then
   UNMET=$UNMET"base64/coreutils "
 fi
 
+if !which lsof &> /dev/null
+then
+  UNMET=$UNMET"lsof "
+fi
+
 if [ "$UNMET" != "" ]
 then
   echo "Before installing The Final Key, please install the following:"
@@ -58,13 +63,16 @@ function putFile
   echo $1 | base64 -d | gunzip > $2
 }
 
+#The binaries are created with: gzip -c THEFILENAME | base64
+
 # The "finalkey" script which opens an xterm with minicom in it.
-putFile H4sIAGTU9lIAA72SwUrDQBRF9/mK27GkoKTT0p1QRajdFMRFcdMITpKXZuhkUjJTTcCP96WN0Apu\
-XBhmEV4ec+855GogE21lolwRLFeLx5f5W00qM9ruIDN6l0ttlVlR+xboHBsM7zGYY4LXwBdkA6Dx\
-VJeIki1qyhDlWyRGpTtEa4inyiOtrKXUUyZwozSihrdH15rHz7op1f4W8uBq6QpVk9wfR07mXeiO\
-2nGTlCNEBEFpUXUvsYhjezqI48lstpmW4GddEI5VwV2hHex5NnwF7gvXOk/luL9CIAzhDNEe04kI\
-yDhiIMY0rsrxiW3NX4ZHKwjvTjrswRhe6uHP8Xmb7A8BD6aT2f6jhJo6eNXnKrbAs+98XdnOxIWr\
-X2QAvQ7AkXc6OyPt+Zj0o9Ce/o7Ehi66iA6u1JZv4SRGXVz+gwi5UK4DPsEXbc2crrkCAAA= $BINNAME
+putFile H4sICLkMf1MAA2ZpbmFsa2V5AL2SwUrDQBRF9/mK27GkoKTT0p1QRajdFMRFcdMITpKXZuhkUjJT\
+TcCP96WN0ApuXBhmEV4ec+855GogE21lolwRLFeLx5f5W00qM9ruIDN6l0ttlVlR+xboHBsM7zGY\
+Y4LXwBdkA6DxVJeIki1qyhDlWyRGpTtEa4inyiOtrKXUUyZwozSihrdH15rHz7op1f4W8uBq6QpV\
+k9wfR07mXeiO2nGTlCNEBEFpUXUvsYhjezqI48lstpmW4GddEI5VwV2hHex5NnwF7gvXOk/luL9C\
+IAzhDNEe04kIyDhiIMY0rsoRWXxiW/PH4VEMwruTEXswhvd6/nMDvE32h4MH0/ls/9FDTR2/6nMV\
+i+DZd76ubCfjQtcvPoDeCODIO52dkfZ8TPpRaE9/R2JDF11EB1dqy7dwEqMuLn9DhFwo1wGf4AtK\
+A3xFvAIAAA== $BINNAME
 chown $1 $BINNAME
 chmod u+x $BINNAME
 
