@@ -227,7 +227,7 @@ int main(int argc, char** argv)
   
   if( argc != 4  && argc != 3)
   {
-    printf("Usage: ./finalkeybackup ACTION FILE [TTYDEVICE]\n"
+    printf("Usage: finalkeybackup ACTION FILE [TTYDEVICE]\n"
 	   "       ACTION - backup or restore\n"
 	   "       FILE   - The file to export into or import from.\n"
 	   "       TTYDEVICE - Device file, defaults to /dev/FinalKey (Optional)\n"

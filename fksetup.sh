@@ -1,39 +1,52 @@
 #!/bin/bash
 
+UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
+BINNAME=/usr/bin/finalkey
+BCKBINNAME=/usr/bin/finalkeybackup
+ICONNAME=/usr/share/pixmaps/finalkey.png
+XICONNAME=/usr/share/pixmaps/finalkey.xbm
+DESKTOPNAME=/usr/share/applications/finalkey.desktop
+
 if !which minicom &> /dev/null
 then
-  UNMET="minicom "
+  UNMET="  minicom\n"
 fi
 
 if !which xterm &> /dev/null
 then
-  UNMET=$UNMET"xterm "
+  UNMET=$UNMET"  xterm\n"
 fi
 
 if !which setsid &> /dev/null
 then
-  UNMET=$UNMET"setsid "
+  UNMET=$UNMET"  setsid\n"
 fi
 
 if !which gunzip &> /dev/null
 then
-  UNMET=$UNMET"gzip "
+  UNMET=$UNMET"  gzip\n"
 fi
 
 if !which base64 &> /dev/null
 then
-  UNMET=$UNMET"base64/coreutils "
+  UNMET=$UNMET"  base64/coreutils\n"
 fi
 
 if !which lsof &> /dev/null
 then
-  UNMET=$UNMET"lsof "
+  UNMET=$UNMET"  lsof\n"
+fi
+
+if !which gcc &> /dev/null
+then
+  UNMET=$UNMET"  gcc (Debian/Ubuntu: build-essential, Archlinux: base-devel)"
+  
 fi
 
 if [ "$UNMET" != "" ]
 then
-  echo "Before installing The Final Key, please install the following:"
-  echo "$UNMET"
+  echo "There are unmet dependencies, please install:"
+  echo -e "$UNMET"
   echo "Installation aborted."
   exit 1
 fi
@@ -50,29 +63,80 @@ else
   fi
 fi
 
-UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
-BINNAME=/usr/bin/finalkey
-ICONNAME=/usr/share/pixmaps/finalkey.png
-XICONNAME=/usr/share/pixmaps/finalkey.xbm
-DESKTOPNAME=/usr/share/applications/finalkey.desktop
-
-echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" > $UDEVNAME
-
+#The base64 encoded data that putFile takes as first argument are created with: gzip -c THEFILENAME | base64
 function putFile
 {
   echo $1 | base64 -d | gunzip > $2
 }
 
-#The binaries are created with: gzip -c THEFILENAME | base64
+#Source code for the backup utility, how elegant!
+putFile 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 "/tmp/fkbck.c"
+
+if ! gcc --std=c99 -o "$BCKBINNAME" "/tmp/fkbck.c"
+then
+  echo
+  echo "Could not build the backup utility."
+  echo "When the problem is resolved, re-run $0 to enable backup."
+  echo "The installation will continue, but the backup feature will not work."
+else
+  chown $1 $BCKBINNAME 
+  chmod u+x $BCKBINNAME
+fi
+rm -f /tmp/fkbck.c
 
 # The "finalkey" script which opens an xterm with minicom in it.
-putFile H4sICLkMf1MAA2ZpbmFsa2V5AL2SwUrDQBRF9/mK27GkoKTT0p1QRajdFMRFcdMITpKXZuhkUjJT\
-TcCP96WN0ApuXBhmEV4ec+855GogE21lolwRLFeLx5f5W00qM9ruIDN6l0ttlVlR+xboHBsM7zGY\
-Y4LXwBdkA6DxVJeIki1qyhDlWyRGpTtEa4inyiOtrKXUUyZwozSihrdH15rHz7op1f4W8uBq6QpV\
-k9wfR07mXeiO2nGTlCNEBEFpUXUvsYhjezqI48lstpmW4GddEI5VwV2hHex5NnwF7gvXOk/luL9C\
-IAzhDNEe04kIyDhiIMY0rsoRWXxiW/PH4VEMwruTEXswhvd6/nMDvE32h4MH0/ls/9FDTR2/6nMV\
-i+DZd76ubCfjQtcvPoDeCODIO52dkfZ8TPpRaE9/R2JDF11EB1dqy7dwEqMuLn9DhFwo1wGf4AtK\
-A3xFvAIAAA== $BINNAME
+putFile H4sICJInf1MAA2ZpbmFsa2V5AL2UXYvaQBSG7/MrXmeDCy0xWu8KtpTuSpctpbTSG13YMZ6YwWQS\
+MslWwR+/Z+Koia03vegQZL7Ox/ucOd70wqXS4VKaxJs+3t3/mjyXJFep0huEK3oJp0rL9JF2z56K\
+MYf/Eb0JhnjyqoS0B2wrKjMEyzVKWiGI11imMtogmEF8yytEudYUVbQSeCsVgi3fvn2jePu72may\
+eI+wNmVoEllSWDRbJoxt0A3tBttldouAIChKcjtZiMVCHz4sFsPxeD7KwGOWEJpUwblCGeh2bFQ5\
+OF+YnakoGzgXAv0+TEpUYDQUHqWGWBDLTE0eI9DYY13yod+AQf/DgYiu05TvOf1tAnyb9AWDT6nl\
+ufuPHEqy+qWLKxkE7x3jq1xbGB1cV3gAjkjDZA7hjwQmE4gla6sLgSfs9+39kkyVl8QHjdEJUGPf\
+w+9ERQmOkg5OLqFe2HEKVq+w6ToDqVdwgRDXulHEanllK660qWSacsWtzoQ5ZDJKlKaBuHD5cLiJ\
+dRQ5n0FZa8QbQ1VdDEzSMtiqCiO3jJWbnNYdPf4I/jv44/Yli/GI8Ebww6KmgS60Nmm15+JcpC+U\
+FqJzFnRG9+ycFDojwOfDI/jzBVx14GRNH77eWwc/5cupEuzEbl+3PZapMQ7wwy2deVzm2V8cHOdn\
+5ifiXBmjVq1+c13G/cZvq6J/b6xZGzbzELbFMqXZC0fihrvr/hmif86Mf/jzXgFrabSgSQUAAA== $BINNAME
 chown $1 $BINNAME
 chmod u+x $BINNAME
 
@@ -99,7 +163,11 @@ ZJX+ANcr2UOtKXrUWBhumMm6F5lTZExmog5DyZlY7QVl2VDIVGxtK7KYjIyBBMY3efv8DevXX33h\
 f+0qBxhQKRSJ1OzZTftZY4raAT4+IJanjgAAAA== $DESKTOPNAME
 chmod a+r $DESKTOPNAME
 
-echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$BINNAME\n$UDEVNAME\n"
+#The udev file
+echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" > $UDEVNAME
+
+
+echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$BINNAME\n$BCKBINNAME\n$UDEVNAME\n"
 
 if which systemctl &> /dev/null
 then
