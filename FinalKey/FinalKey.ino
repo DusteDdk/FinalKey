@@ -133,26 +133,27 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
 }
 
 //Get the keyboard language from user
+/*
+Todo: replace with LAYOUT_0 .. 4, supporting 4 layouts would give enough flash to implement the keycard-lookup feature.
+#define KEYBOARD_LANG_DK_PC	0
+#define KEYBOARD_LANG_DK_MAC	1
+#define KEYBOARD_LANG_US_PC	2
+#define KEYBOARD_LANG_US_MAC	3
+#define KEYBOARD_LANG_FR_PC	4
+#define KEYBOARD_LANG_FR_MAC	5
+
+*/
 void getKbLayout()
 {
   uint8_t k;
   while(1)
   {
-    ptxt("Select keyboard layout:\r\n 1 = DK PC\r\n 2 = US PC\r\n 3 = DK MAC\r\n%");
+    ptxt("Select keyboard layout:\r\n 0 DK_PC\r\n 1 DK_MAC\r\n 2 US_PC\r\n 3 US_MAC\r\n 4 FR_PC\r\n 5 FR_MAC\r\n %");
     k = getOneChar();
-    if( k == '1' )
+    if( k > '0'-1 && k < '5'+1)
     {
-      ES.setKeyboardLayout(KEYBOARD_LANG_DK_PC);
-    } else if( k == '2' )
-    {
-      ES.setKeyboardLayout(KEYBOARD_LANG_US_PC);
-    } else if( k == '3' )
-    {
-      ES.setKeyboardLayout(KEYBOARD_LANG_DK_MAC);
-    }
+      ES.setKeyboardLayout(k-'0');
 
-    if( k > '0' && k < '4' )
-    {
       if( testChars() )
       {
         ptxtln("\r\n[saved]");
@@ -304,10 +305,16 @@ uint8_t login(bool header)
           if( ES.getKeyboardLayout() == KEYBOARD_LANG_DK_PC )
           {
             ptxtln("DK PC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_US_PC ) {
-            ptxtln("US PC]");
           } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_DK_MAC ) {
             ptxtln("DK MAC]");
+          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_US_PC ) {
+            ptxtln("US PC]");
+          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_US_MAC ) {
+            ptxtln("US MAC]");
+          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_FR_PC ) {
+            ptxtln("FR PC]");
+          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_FR_MAC ) {
+            ptxtln("FR PC]");
           } else {
             ptxtln("Unknown]");
           }
@@ -975,6 +982,29 @@ void entryList(int8_t dir)
  Serial.write('>');
 }
 
+void machineList()
+{
+  char eName[32];
+
+  uint16_t i;
+      Serial.println();      
+  for(i=0; i < 256; i++)
+  {
+    if( ES.getTitle((uint8_t)i, eName) )
+    {
+      if( i < 0x10 )
+      {
+        Serial.write('0');
+      }
+      Serial.print(i,HEX);
+      Serial.print(eName);
+      Serial.println();
+    }
+  }
+  
+ Serial.write('>');
+}
+
 //Convert a string to uppercase for easy comparison by the search feature.
 void strToUpper(char* str)
 {
@@ -1344,6 +1374,10 @@ void loop() {
              } else {
                ptxtln("[NO]");
              }
+             break;
+             case 'l': //List for machines
+             machineList();
+             break;
            }
          }
 
