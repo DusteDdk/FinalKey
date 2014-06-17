@@ -200,6 +200,7 @@ void testSequence()
     Serial.write( (char)passChars[i] );
   }
   //// <-- Test
+  Serial.println();
   
 }
 
