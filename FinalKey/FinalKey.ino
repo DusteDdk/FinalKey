@@ -1237,6 +1237,10 @@ void loop() {
          } else if( isHex(cmd[0]) )
          {
            cmdType=CMD_FIRE_BOTH;
+         } else if ( cmd[0] == '%' )
+         {
+           ptxt("\rYou don't need to type % for user+pass, just type the account number.\r\n>");
+           p=0;
          } else if( cmd[0] == 'x' )
          {
            cmdType=CMD_EXTENDED;
