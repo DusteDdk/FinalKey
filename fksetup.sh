@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# License: WTFPL ( http://www.wtfpl.net/ )
+
+
 UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
 BINNAME=/usr/bin/finalkey
 BCKBINNAME=/usr/bin/finalkeybackup
