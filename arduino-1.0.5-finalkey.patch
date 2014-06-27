@@ -338,23 +338,16 @@ diff -rupN arduino-1.0.5/hardware/arduino/cores/arduino/HID.cpp arduino-dst/hard
 +#endif /* if defined(USBCON) */
 diff -rupN arduino-1.0.5/hardware/arduino/cores/arduino/USBAPI.h arduino-dst/hardware/arduino/cores/arduino/USBAPI.h
 --- arduino-1.0.5/hardware/arduino/cores/arduino/USBAPI.h	2013-05-17 20:22:16.000000000 +0200
-+++ arduino-dst/hardware/arduino/cores/arduino/USBAPI.h	2014-06-27 02:26:21.602419310 +0200
-@@ -111,6 +111,14 @@ extern Mouse_ Mouse;
++++ arduino-dst/hardware/arduino/cores/arduino/USBAPI.h	2014-06-27 08:29:55.729860081 +0200
+@@ -111,6 +111,7 @@ extern Mouse_ Mouse;
  #define KEY_F11				0xCC
  #define KEY_F12				0xCD
  
-+//TODO: Need to be able to select which ones to include compile-time so we don't run out of flash.
-+#define KEYBOARD_LANG_DK_PC	0
-+#define KEYBOARD_LANG_DK_MAC	1
-+#define KEYBOARD_LANG_US_PC	2
-+#define KEYBOARD_LANG_US_MAC	3
-+#define KEYBOARD_LANG_FR_PC	4
-+#define KEYBOARD_LANG_FR_MAC	5
 +
  //	Low level key report: up to 6 keys and shift, ctrl etc at once
  typedef struct
  {
-@@ -126,15 +134,17 @@ private:
+@@ -126,15 +127,17 @@ private:
  	void sendReport(KeyReport* keys);
  public:
  	Keyboard_(void);
