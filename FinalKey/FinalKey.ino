@@ -24,6 +24,10 @@
 #include <I2ceep.h>
 
 
+//Edit this file to select included layouts.
+#include <KeyMaps.h>
+
+
 #define ledPin 10
 #define btnPin 9
 #define btnPwr 7
@@ -150,38 +154,67 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
   }
 }
 
-//Get the keyboard language from user
-/*
-Todo: replace with LAYOUT_0 .. 4, supporting 4 layouts would give enough flash to implement the keycard-lookup feature.
-#define KEYBOARD_LANG_DK_PC	0
-#define KEYBOARD_LANG_DK_MAC	1
-#define KEYBOARD_LANG_US_PC	2
-#define KEYBOARD_LANG_US_MAC	3
-#define KEYBOARD_LANG_FR_PC	4
-#define KEYBOARD_LANG_FR_MAC	5
-
-*/
 void getKbLayout()
 {
   uint8_t k;
   while(1)
   {
-    ptxt("Select keyboard layout:\r\n 0 DK_PC\r\n 1 DK_MAC\r\n 2 US_PC\r\n 3 US_MAC\r\n 4 FR_PC\r\n 5 FR_MAC\r\n %");
-    k = getOneChar();
-    if( k > '0'-1 && k < '5'+1)
-    {
-      ES.setKeyboardLayout(k-'0');
-
-      if( testChars() )
+    ptxtln("Select keyboard layout:");
+#ifdef KBMAP_A
+  ptxtln(KBMAP_A_NAME);
+#endif
+#ifdef KBMAP_B
+  ptxtln(KBMAP_B_NAME);
+#endif
+#ifdef KBMAP_C
+  ptxtln(KBMAP_C_NAME);
+#endif
+#ifdef KBMAP_D
+  ptxtln(KBMAP_D_NAME);
+#endif
+  ptxt("% ");
+    
+    k = getOneChar()-'0';
+      switch(k)
       {
-        ptxtln("\r\n[saved]");
-        return;
+        #ifdef KBMAP_A
+        case 1:
+          k=KBMAP_A;
+        break;
+        #endif
+        #ifdef KBMAP_B
+        case 2:
+          k=KBMAP_B;
+        break;
+        #endif
+        #ifdef KBMAP_C
+        case 3:
+          k=KBMAP_C;
+        break;
+        #endif
+        #ifdef KBMAP_D
+        case 4:
+          k=KBMAP_D;
+        break;
+        #endif
+        default:
+          k=INVALID_KEYBOARD_LAYOUT;
+        break;
       }
-    } else {
-      ptxtln("\r\n[Invalid choice]");
-    }
+      if( k == INVALID_KEYBOARD_LAYOUT )
+      {
+        ptxtln("\r\n[Invalid choice]");
+      } else {
+        kbmaps.setKbMap(k);
+        if( testChars() )
+        {
+          ES.setKeyboardLayout(k);
+          ptxtln("\r\n[saved]");
+          return;
+        }
+      }
     Serial.println();
-  }
+  }//While 1 ends here
 }
 
 //User-friendly format process.
@@ -296,7 +329,7 @@ uint8_t login(bool header)
   char devName[32];
   memset(key,0,33);
   memset(devName,0,32);
-  uint8_t ret=0;   
+  uint8_t ret=0;
 
   if(header)
     cls();
@@ -319,23 +352,8 @@ uint8_t login(bool header)
        ret=1;
        if(header)
         {
-          ptxt("\r\n[Granted]\r\n[Keyboard: ");
-          if( ES.getKeyboardLayout() == KEYBOARD_LANG_DK_PC )
-          {
-            ptxtln("DK PC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_DK_MAC ) {
-            ptxtln("DK MAC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_US_PC ) {
-            ptxtln("US PC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_US_MAC ) {
-            ptxtln("US MAC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_FR_PC ) {
-            ptxtln("FR PC]");
-          } else if( ES.getKeyboardLayout() == KEYBOARD_LANG_FR_MAC ) {
-            ptxtln("FR PC]");
-          } else {
-            ptxtln("Unknown]");
-          }
+          ptxtln("\r\n[Granted]");
+          kbmaps.setKbMap(ES.getKeyboardLayout());
         }        
      } else {
        if(header)

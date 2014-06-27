@@ -74,8 +74,6 @@ bool EncryptedStorage::readHeader(char* deviceName)
   }
   I2E_Read(offset, (byte*)deviceName, 32);
   
-  Keyboard.begin(getKeyboardLayout());
-  
   return(TRUE);
 }
 
@@ -476,7 +474,6 @@ uint16_t EncryptedStorage::getNextEmpty()
 void EncryptedStorage::setKeyboardLayout(uint8_t lang)
 {
   byte buf = (byte)lang;
-  Keyboard.begin(lang);
   I2E_Write(EEPROM_KEYBOARD_LAYOUT_LOCATION, &buf, 1);  
 }
 
