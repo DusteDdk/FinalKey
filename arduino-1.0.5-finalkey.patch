@@ -9,6 +9,37 @@ diff -rupN arduino-1.0.5/arduino arduino-dst/arduino
 +# /home/dusted/opt/jre1.8.0_05/bin/java -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel processing.app.Base "$@"
 +/home/dusted/opt/jdk1.8.0_05/bin/java -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel processing.app.Base "$@"
 +
+diff -rupN arduino-1.0.5/hardware/arduino/boards.txt arduino-dst/hardware/arduino/boards.txt
+--- arduino-1.0.5/hardware/arduino/boards.txt	2013-05-17 20:22:16.000000000 +0200
++++ arduino-dst/hardware/arduino/boards.txt	2014-06-27 09:38:40.495813242 +0200
+@@ -167,6 +167,27 @@ leonardo.build.variant=leonardo
+ 
+ ##############################################################
+ 
++finalkey.name=FinalKey
++finalkey.upload.protocol=avr109
++finalkey.upload.maximum_size=28672
++finalkey.upload.speed=57600
++finalkey.upload.disable_flushing=true
++finalkey.bootloader.low_fuses=0xff
++finalkey.bootloader.high_fuses=0xd8
++finalkey.bootloader.extended_fuses=0xcb
++finalkey.bootloader.path=caterina
++finalkey.bootloader.file=Caterina-Leonardo.hex
++finalkey.bootloader.unlock_bits=0x3F
++finalkey.bootloader.lock_bits=0x2F
++finalkey.build.mcu=atmega32u4
++finalkey.build.f_cpu=16000000L
++finalkey.build.vid=0x1d50 
++finalkey.build.pid=0x60a6
++finalkey.build.core=arduino
++finalkey.build.variant=leonardo
++
++##############################################################
++
+ esplora.name=Arduino Esplora
+ esplora.upload.protocol=avr109
+ esplora.upload.maximum_size=28672
 diff -rupN arduino-1.0.5/hardware/arduino/cores/arduino/HID.cpp arduino-dst/hardware/arduino/cores/arduino/HID.cpp
 --- arduino-1.0.5/hardware/arduino/cores/arduino/HID.cpp	2013-05-17 20:22:16.000000000 +0200
 +++ arduino-dst/hardware/arduino/cores/arduino/HID.cpp	2014-06-27 02:26:51.015245743 +0200
@@ -366,6 +397,27 @@ diff -rupN arduino-1.0.5/hardware/arduino/cores/arduino/USBAPI.h arduino-dst/har
  //================================================================================
  //================================================================================
  //	Low level API
+diff -rupN arduino-1.0.5/hardware/arduino/cores/arduino/USBCore.cpp arduino-dst/hardware/arduino/cores/arduino/USBCore.cpp
+--- arduino-1.0.5/hardware/arduino/cores/arduino/USBCore.cpp	2013-05-17 20:22:16.000000000 +0200
++++ arduino-dst/hardware/arduino/cores/arduino/USBCore.cpp	2014-06-27 09:45:53.001821600 +0200
+@@ -59,6 +59,8 @@ const u16 STRING_IPRODUCT[17] = {
+ 	'A','r','d','u','i','n','o',' ','E','s','p','l','o','r','a',' '
+ #elif USB_PID == 0x9208
+ 	'L','i','l','y','P','a','d','U','S','B',' ',' ',' ',' ',' ',' '
++#elif USB_PID == 0x60a6
++	'T','h','e',' ','F','i','n','a','l',' ','K','e','y',' ',' ',' '
+ #else
+ 	'U','S','B',' ','I','O',' ','B','o','a','r','d',' ',' ',' ',' '
+ #endif
+@@ -70,6 +72,8 @@ const u16 STRING_IMANUFACTURER[12] = {
+ 	'A','r','d','u','i','n','o',' ','L','L','C'
+ #elif USB_VID == 0x1b4f
+ 	'S','p','a','r','k','F','u','n',' ',' ',' '
++#elif USB_VID == 0x1d50
++	'C','y','b','e','r','s','t','a','l','k','R'
+ #else
+ 	'U','n','k','n','o','w','n',' ',' ',' ',' '
+ #endif
 diff -rupN arduino-1.0.5/libraries/Wire/Wire.h arduino-dst/libraries/Wire/Wire.h
 --- arduino-1.0.5/libraries/Wire/Wire.h	2013-05-17 20:22:16.000000000 +0200
 +++ arduino-dst/libraries/Wire/Wire.h	2014-03-16 02:19:17.163233000 +0100
