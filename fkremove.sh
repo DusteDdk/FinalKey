@@ -26,6 +26,7 @@ DESKTOPNAME=/usr/share/applications/finalkey.desktop
 ICONNAME=/usr/share/pixmaps/finalkey.png
 UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
 XICONNAME=/usr/share/pixmaps/finalkey.xbm
+SHAREDIR=/usr/share/finalkey
 
 ROOT_UID=0
 #Make sure user is root
@@ -49,8 +50,14 @@ fi
 
     echo -e "\nRemoving Files..."
 
+    if [ -d $SHAREDIR ]
+    then
+      rm -R $SHAREDIR
+      echo $SHAREDIR
+    fi
+
     #Delete all files installed by fksetup.sh
-    for DELETE in $BCKBINNAME $BINNAME $DESKTOPNAME $ICONNAME $UDEVNAME $XICONNAME
+    for DELETE in $BCKBINNAME $BINNAME $DESKTOPNAME $ICONNAME $UDEVNAME $XICONNAME $SET_SHAREDIR
     do
        rm $DELETE
        RMSTATE=$?

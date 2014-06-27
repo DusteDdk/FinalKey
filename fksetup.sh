@@ -2,13 +2,14 @@
 
 # License: WTFPL ( http://www.wtfpl.net/ )
 
-
 UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
 BINNAME=/usr/bin/finalkey
 BCKBINNAME=/usr/bin/finalkeybackup
 ICONNAME=/usr/share/pixmaps/finalkey.png
 XICONNAME=/usr/share/pixmaps/finalkey.xbm
 DESKTOPNAME=/usr/share/applications/finalkey.desktop
+SHAREDIR=/usr/share/finalkey
+GUINAME=$SHAREDIR/GUI.jar
 
 if !which minicom &> /dev/null
 then
@@ -43,7 +44,11 @@ fi
 if !which gcc &> /dev/null
 then
   UNMET=$UNMET"  gcc (Debian/Ubuntu: build-essential, Archlinux: base-devel)"
-  
+fi
+
+if !which java &> /dev/null
+then
+   echo "Java not found, GUI option won't be installed."
 fi
 
 if [ "$UNMET" != "" ]
@@ -130,16 +135,19 @@ fi
 rm -f /tmp/fkbck.c
 
 # The "finalkey" script which opens an xterm with minicom in it.
-putFile H4sICJInf1MAA2ZpbmFsa2V5AL2UXYvaQBSG7/MrXmeDCy0xWu8KtpTuSpctpbTSG13YMZ6YwWQS\
-MslWwR+/Z+Koia03vegQZL7Ox/ucOd70wqXS4VKaxJs+3t3/mjyXJFep0huEK3oJp0rL9JF2z56K\
-MYf/Eb0JhnjyqoS0B2wrKjMEyzVKWiGI11imMtogmEF8yytEudYUVbQSeCsVgi3fvn2jePu72may\
-eI+wNmVoEllSWDRbJoxt0A3tBttldouAIChKcjtZiMVCHz4sFsPxeD7KwGOWEJpUwblCGeh2bFQ5\
-OF+YnakoGzgXAv0+TEpUYDQUHqWGWBDLTE0eI9DYY13yod+AQf/DgYiu05TvOf1tAnyb9AWDT6nl\
-ufuPHEqy+qWLKxkE7x3jq1xbGB1cV3gAjkjDZA7hjwQmE4gla6sLgSfs9+39kkyVl8QHjdEJUGPf\
-w+9ERQmOkg5OLqFe2HEKVq+w6ToDqVdwgRDXulHEanllK660qWSacsWtzoQ5ZDJKlKaBuHD5cLiJ\
-dRQ5n0FZa8QbQ1VdDEzSMtiqCiO3jJWbnNYdPf4I/jv44/Yli/GI8Ebww6KmgS60Nmm15+JcpC+U\
-FqJzFnRG9+ycFDojwOfDI/jzBVx14GRNH77eWwc/5cupEuzEbl+3PZapMQ7wwy2deVzm2V8cHOdn\
-5ifiXBmjVq1+c13G/cZvq6J/b6xZGzbzELbFMqXZC0fihrvr/hmif86Mf/jzXgFrabSgSQUAAA== $BINNAME
+putFile H4sICJhDrVMAA2ZpbmFsa2V5AL1V227aQBB9jr/iZINI0so2NG+RaFU1oY0StVFL24cQKYsZ4w3L\
+2vKaAFI+vuMLYJNSVX2ohWAvM2dmzhwPR4f+SBl/JG3kOEe4UQEZS+f4Oejf3uAEUZYl576/WCy8\
+RRYm2jOU+Th1nP71xeWP3kNKcqyVmcIf05PfV0bqa1o9OCrEHVrvcNhDB/dOFpFxgGVG6QzuaIKU\
+xnDDCUZaBlO4A4jPcYYgNoaCjMYCr6WCu2Tr41eKj2/VciaTc/hzm/o2kin5SXFk/TAPOqWVtxzN\
+juESBAVRnC+GYjg05QfDYefs7K47Az+DiFCkCs4VysLUYyOLwfnCrmxGM6+CEGi3YTVRgm5HOKQt\
+cUFcprZxCNfgGZOUL1sFMWi/LRkxc63Zrqq/zgBbk9nh4L3O+Vz9Rx5SyuuXVVzJRPDZOr6KTU5G\
+g649fAAVIwUndxCtrkCvBzHi2uaJwD2en+vnKdksTokvCqcNQYX/IRaRCiKsSypBdknd8eMU8npF\
+nm7lIM0YVSCEc1NUxNXyLu+4MjaTWnPH8zoj5mEmg0gZ8sQO5FVpiUkQVJhuOjcIp5ayeeLZqOaw\
+VBm61TZU1WKzb9TT6qL1Bq2zuhHpJn+Tufo9RyVDj/JJ7uXlgNOzalwauY8yhajpZp2M//H7lceX\
+ooGDtnNQ1NLh37y1ByUVbAxDNLYl6olWU9Kr4oUxPDwQh6EKFGslNsx5Gs/wJZWBplPR5CTHXEvl\
+SPALRMWg2KmziFlfi60YP5FOROPObTzNuy35aDwuPpRif6F0vhrwy5pv90Jxd/4S6mMqE+7YH7Aq\
+UfSvbi5zrG/yaaNjxsuPvb2+a5EXzi6+VtvKvWjDS4D1eqvYjV4r4WynVTWjeFqx7jL697E0qLeQ\
+qRH5gGKSGYUj8bi6aP6VsA43mfEXf34BxD2weLMGAAA= $BINNAME
 chown $1 $BINNAME
 chmod u+x $BINNAME
 
@@ -168,13 +176,32 @@ chmod a+r $DESKTOPNAME
 
 #The udev file
 echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" > $UDEVNAME
+echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"1d50\", ATTRS{idProduct}==\"60a6\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" >> $UDEVNAME
 
 
-echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$BINNAME\n$BCKBINNAME\n$UDEVNAME\n"
-
-if which systemctl &> /dev/null
+if which java &> /dev/null
 then
-  systemctl restart udev &> /dev/null
+  if uname -a | grep -i x86_64 &> /dev/null
+  then
+    echo "Downloading gui..."
+    mkdir -p $SHAREDIR
+    wget http://cyberstalker.dk/finalkey/gui/FinalKey_Lin64.jar -O $GUINAME
+  fi
+fi
+
+echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$BINNAME\n$BCKBINNAME\n$UDEVNAME"
+
+if [ -f "$GUINAME" ]
+then
+  echo $GUINAME
+fi
+
+
+echo " "
+
+if which udevadm &> /dev/null
+then
+  udevadm control --reload-rules &> /dev/null
 elif which restart &> /dev/null
 then
   restart udev &> /dev/null
