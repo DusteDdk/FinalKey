@@ -16,25 +16,31 @@ class KeyMaps
 //Calculated as (1<<(KEY_RIGHT_ALT-128))
 #define ALT 64
 
+
 #define KBMAP_USPC 1
 #define KBMAP_USMAC 2
 #define KBMAP_DKPC 3
 #define KBMAP_DKMAC 4
 #define KBMAP_FRPC 5
 #define KBMAP_FRMAC 6
+#define KBMAP_DEPC 7
+#define KBMAP_DEMAC 8
+
 
 // To save flash, include only 4 layouts.
 // Edit these to include layouts, valid choices are the above.
 #define KBMAP_A KBMAP_USPC
 #define KBMAP_B KBMAP_DKPC
-#define KBMAP_C KBMAP_DKMAC
-#define KBMAP_D KBMAP_FRPC
+#define KBMAP_C KBMAP_FRPC
+#define KBMAP_D KBMAP_DEPC
 
 #include "keymap-us.h"
 #include "keymap-dk.h"
 #include "keymap-fr.h"
+#include "keymap-de.h"
 
 #define INVALID_KEYBOARD_LAYOUT 200
+
 
 extern KeyMaps kbmaps;
 

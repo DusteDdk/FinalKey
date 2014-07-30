@@ -1,4 +1,4 @@
-
+// PC
 #if KBMAP_A == KBMAP_DKPC || KBMAP_B == KBMAP_DKPC || KBMAP_C == KBMAP_DKPC || KBMAP_D == KBMAP_DKPC
 
 #define KBMAP_DKPC_PTR &DKPC_asciimap
@@ -23,17 +23,7 @@
 
 #endif
 
-/*
- * 
- * 
- * 
- * 
- * The Danish apple keyboard is disgusting.
- * 
- * 
- * 
- *
- */
+// MAC
 
 #if KBMAP_A == KBMAP_DKMAC || KBMAP_B == KBMAP_DKMAC || KBMAP_C == KBMAP_DKMAC || KBMAP_D == KBMAP_DKMAC
 
@@ -56,6 +46,5 @@
 #if KBMAP_D == KBMAP_DKMAC
 #define KBMAP_D_NAME "  4. DKMAC"
 #endif
-
 
 #endif

@@ -3,6 +3,7 @@
 #include "keymap-us.inc"
 #include "keymap-dk.inc"
 #include "keymap-fr.inc"
+#include "keymap-de.inc"
 
 
 void KeyMaps::setKbMap(uint8_t mapNum)
@@ -46,6 +47,19 @@ void KeyMaps::setKbMap(uint8_t mapNum)
     case KBMAP_FRMAC:
       Keyboard.begin( (uint8_t*)(KBMAP_FRMAC_PTR) );
       ptxtln("[Keyboard: FR-MAC]");
+    break;
+#endif
+    
+#ifdef KBMAP_DEPC_PTR
+    case KBMAP_DEPC:
+      Keyboard.begin( (uint8_t*)(KBMAP_DEPC_PTR) );
+      ptxtln("[Keyboard: DE-PC]");
+    break;
+#endif
+#ifdef KBMAP_DEMAC_PTR
+    case KBMAP_DEMAC:
+      Keyboard.begin( (uint8_t*)(KBMAP_DEMAC_PTR) );
+      ptxtln("[Keyboard: DE-MAC]");
     break;
 #endif
     default:
