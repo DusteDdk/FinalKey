@@ -1,14 +1,3 @@
-diff -rupN arduino-1.0.5/arduino arduino-dst/arduino
---- arduino-1.0.5/arduino	2013-05-17 20:22:17.000000000 +0200
-+++ arduino-dst/arduino	2014-05-22 19:28:07.627265343 +0200
-@@ -19,4 +19,6 @@ export LD_LIBRARY_PATH
- 
- export PATH="${APPDIR}/java/bin:${PATH}"
- 
--java -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel processing.app.Base "$@"
-+# /home/dusted/opt/jre1.8.0_05/bin/java -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel processing.app.Base "$@"
-+/home/dusted/opt/jdk1.8.0_05/bin/java -Dswing.defaultlaf=com.sun.java.swing.plaf.gtk.GTKLookAndFeel processing.app.Base "$@"
-+
 diff -rupN arduino-1.0.5/hardware/arduino/boards.txt arduino-dst/hardware/arduino/boards.txt
 --- arduino-1.0.5/hardware/arduino/boards.txt	2013-05-17 20:22:16.000000000 +0200
 +++ arduino-dst/hardware/arduino/boards.txt	2014-06-27 09:38:40.495813242 +0200
