@@ -94,8 +94,8 @@ uint8_t DEPC_asciimap[256] PROGMEM =
 	0x19,SHIFT, // V
 	0x1a,SHIFT, // W
 	0x1b,SHIFT, // X
-	0x1c,SHIFT, // Y
-	0x1d,SHIFT, // Z
+	0x1d,SHIFT, // Y
+	0x1c,SHIFT, // Z
 	0x25,ALTR,  // [
 	0x2d,ALT, // bslash from key 7 or 0x54 NOMOD fromNumberpad (quotient), top row second, next to NUM key// 
 	0x26,ALTR , // ]
