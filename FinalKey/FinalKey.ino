@@ -35,7 +35,6 @@
 #define BTN_NO 0
 #define BTN_YES 1
 
-#define CMD_FIRE_USER 0
 #define CMD_FIRE_PASS 1
 #define CMD_FIRE_BOTH 2
 #define CMD_SHOW_BOTH 3
@@ -55,6 +54,7 @@
 #define CMD_EXTENDED 17
 #define CMD_ROBOT 18
 #define CMD_SEARCH_TRIG 19
+#define CMD_FIRE_USER 20
 
 //Timeout time (in milliseconds) for things that require a bit extra attention from the user.
 #define BTN_TIMEOUT_IMPORTANT 5000
