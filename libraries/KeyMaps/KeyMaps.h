@@ -25,18 +25,21 @@ class KeyMaps
 #define KBMAP_FRMAC 6
 #define KBMAP_DEPC 7
 #define KBMAP_DEMAC 8
+#define KBMAP_SEPC 9
+#define KBMAP_SEMAC 10
 
 // To save flash, include only 4 layouts.
 // Edit these to include layouts, valid choices are the above.
-#define KBMAP_A KBMAP_DKMAC
+#define KBMAP_A KBMAP_USPC
 #define KBMAP_B KBMAP_DKPC
-#define KBMAP_C KBMAP_DEPC
-#define KBMAP_D KBMAP_DEMAC
+#define KBMAP_C KBMAP_DKMAC
+//#define KBMAP_D KBMAP_SEMAC
 
 #include "keymap-us.h"
 #include "keymap-dk.h"
 #include "keymap-fr.h"
 #include "keymap-de.h"
+#include "keymap-se.h"
 
 #define INVALID_KEYBOARD_LAYOUT 200
 
