@@ -154,12 +154,8 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
   }
 }
 
-void getKbLayout()
+void printKbLayoutList()
 {
-  uint8_t k;
-  while(1)
-  {
-    ptxtln("Select keyboard layout:");
 #ifdef KBMAP_A
   ptxtln(KBMAP_A_NAME);
 #endif
@@ -172,6 +168,15 @@ void getKbLayout()
 #ifdef KBMAP_D
   ptxtln(KBMAP_D_NAME);
 #endif
+}
+
+void getKbLayout()
+{
+  uint8_t k;
+  while(1)
+  {
+    ptxtln("Select keyboard layout:");
+    printKbLayoutList();
   ptxt("% ");
     
     k = getOneChar()-'0';
@@ -1037,6 +1042,8 @@ void machineList()
       Serial.println();
     }
   }
+  Serial.println("[KBL]");
+  printKbLayoutList();
   
  Serial.write('>');
 }
@@ -1332,6 +1339,7 @@ void loop() {
                  ptxt("\r\nCurrent psw:");
                  if( login(0) )
                  {
+                   ptxt("\r\n");
                    format();
                  } else {
                    ptxt("\r\nWrong password\r\n[lock]");
