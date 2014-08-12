@@ -135,20 +135,19 @@ fi
 rm -f /tmp/fkbck.c
 
 # The "finalkey" script which opens an xterm with minicom in it.
-putFile H4sICHcC3FMAA2ZpbmFsa2V5AL1V227aQBB9jr/iZINI0so2NFKlRqJV1TRplKiNWto+hEhZzBhv\
-WNaW1wSQ8vEdXwCblKrqQy0Ee5k5M3PmeDjY94fK+ENpI8c5wLUKyFg6xc/++c01jhBlWXLq+/P5\
-3JtnYaI9Q5mPY8c5vzr7+KN3n5IcaWUm8Ef06J8rI/UVLe8dFeIWrXfY76GDOyeLyDjAIqN0Cnc4\
-RkojuOEYQy2DCdw+xOc4QxAbQ0FGI4GXUsFdsPXhC8XHN2oxlckp/JlNfRvJlPykOLJ+mAed0NJb\
-DKeHcAmCgijOFwMxGJjyg8Ggc3Jy252Cn35EKFIF5wplYeqxkcXgfGGXNqOpV0EItNuwmihBtyMc\
-0pa4IC5T2ziEa/CEccqXrYIYtN+WjJiZ1mxX1V9ngK3JbHHwXud8Lv8jDynl9csqrmQi+GwVX8Um\
-J6NB1w4+gIqRgpNbiFZXoNeDGHJts0TgDk9P9fOUbBanxBeF05qgwn8f80gFEVYllSDbpG75cQp5\
-vSJPt3KQZoQqEMKZKSrianmXd1wZm0mtueN5nRHzMJVBpAx5YgvysrTEOAgqTDedGYQTS9ks8WxU\
-c1ioDN1qG6pqsd436ml10XqF1kndiHSTv/FM/Z6jkqEH+Sh38rLH6Vk1Ko3cB5lC1HSzSsa/+H7p\
-8aVo4KDt7BW1dPg3b+1eSQUbwxCNbIl6pNWE9LJ4YQwPD8RhqALFWokNc57GU3xJZaDpWDQ5yTFX\
-UjkQ/AJRMSi26ixi1tdiI8ZPpBPRuHMbT/NuQz4aj4sPpdifKZ2v+vyy5tudUNydv4S6SGXCHfsD\
-ViWK88vrjznWN/m41jHj5cfeTt+VyAtnF1+rbeVetOE5wGq9Uexar5VwNtOqmlE8rVh3Gf37WOrX\
-W8jUiHxAMcmMwpF4XA3x5nWnA/es+ZfCelxnyF/8+QXEGxrVuwYAAA== $BINNAME
-
+putFile H4sICIfi6VMAA2ZpbmFsa2V5AL1V227aQBB9jr/iZINI0soYylskWlXNpVGiNmpo8xCiZjFjvGFZ\
+W14TQMrHd3wBbFKqqg+1EOxl5szMmePhYN8bKuMNpQ0d5wDXyidj6QR3/fObaxwhTNP4xPPm83lr\
+ngaxbhlKPRw7zvnV6dmP3mNCcqSVmcAb0bN3rozUV7R8dFSAezQ+YL+HNh6cNCTjAIuUkinc4RgJ\
+jeAGYwy19Cdw+xBfohR+ZAz5KY0E3koFd8HWh28UH9+oxVTGJ/BmNvFsKBPy4vzIekEWdELL1mI4\
+PYRLEOSHUbYYiMHAFB8MBu1u974zBT/9kJCnCs4VysJUYyONwPnCLm1K01YJIdBswmqiGJ22cEhb\
+4oK4TG2jAK7BC8YJXzZyYtB8XzBiZlqzXVl/lQG2JrPFwUed8bn8jzwklNUvy7iSieCzVXwVmYyM\
+Gl07+ABKRnJO7iEaHYFeD2LItc1igQe8vFTPE7JplBBf5E5rgnL/fcxD5YdYlVSAbJO65ccpZPWK\
+LN3SQZoRykAIZiaviKvlXdZxZWwqteaOZ3WGzMNU+qEy1BJbkJeFJca+X2K6ycwgmFhKZ3HLhhWH\
+hUrRKbeBKhfrfa2eRgeNd2h0q0ak6/yNZ+r3HBUMPclnuZOXvdu7/s+L/lW31wZnatWosHefZAJR\
+kdAqL+/i+2WLL0UNEk1nLy+rzb9Zl/cKVtgYhmhkC9QjrSakl/m7Y3iOIAoC5SuWTWSY/iSa4msi\
+fU3Hok5PhrlSzYHgd4nymbFVch6zuhYbXX4mHYvanVt76nebPqD2uPhU6P6V6Pmqz+9ttt0JxY36\
+S6iLRMbcvD9glfo4v7w+y7Bu5fNa0oyXHbd2+q70nju7+FZuS/e8Da8BVuuNeNfSLYWzGVzluOLB\
+xRJM6d8nVL/aQqZGZLOKSWYUjsST67T+r8I6XGfGX/z5BV5J/1O+BgAA $BINNAME
 
 chown $1 $BINNAME
 chmod u+x $BINNAME
@@ -187,7 +186,7 @@ then
   then
     echo "Downloading gui..."
     mkdir -p $SHAREDIR
-    wget http://cyberstalker.dk/finalkey/gui/FinalKey_Lin64.jar -O $GUINAME
+    wget http://cyberstalker.dk/finalkey/gui/FinalKey_0.1-Linux_amd64.jar -O $GUINAME
   fi
 fi
 
