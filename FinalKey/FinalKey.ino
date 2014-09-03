@@ -110,17 +110,21 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
     if( Serial.available() )
     {
       inchar = Serial.read();
-      if( inchar == 8 )
+
+      if( inchar == 8 ) //If backspace is pressed
       {
         if(index > 0 )
         {
           dst[--index]=0;
         }
-      } else if( inchar == 13 )
+      } else if( inchar == 13 ) //If Enter is pressed
       {
-        dst[index]=0;
         return(1);
-      } else if( index == numChars )
+      } else if( inchar == 27 ) //If Escape is pressed
+      {
+        index=0;
+        memset( dst, 0, numChars+1 );
+      } else if( index == numChars ) //If this key makes the string longer than allowed
       {
         return(0);
       } else {
@@ -139,6 +143,7 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
           dst[index++] = inchar;
         }
       }
+
       if(echo)
       {
         Serial.write('\r');
