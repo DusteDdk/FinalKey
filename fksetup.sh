@@ -186,7 +186,7 @@ then
   then
     echo "Downloading gui..."
     mkdir -p $SHAREDIR
-    wget http://cyberstalker.dk/finalkey/gui/FinalKey_0.1-Linux_amd64.jar -O $GUINAME
+    wget http://finalkey.net/gui/FinalKey_0.1-Linux_amd64.jar -O $GUINAME
   fi
 fi
 
