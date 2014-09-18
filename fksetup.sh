@@ -68,7 +68,7 @@ else
   if [ "$1" == "" ]
   then
     echo "You should run this as the user you want to use The Final Key with, alternative: sudo $0 USERNAME"
-    exit
+    exit 1
   fi
 fi
 
