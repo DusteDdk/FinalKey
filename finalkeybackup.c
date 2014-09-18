@@ -57,7 +57,7 @@
  * 
  */
 
-#define _BSD_SOURCE	// Shut up about cfmakeraw
+#define _DEFAULT_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>

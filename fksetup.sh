@@ -8,47 +8,46 @@ BCKBINNAME=/usr/bin/finalkeybackup
 ICONNAME=/usr/share/pixmaps/finalkey.png
 XICONNAME=/usr/share/pixmaps/finalkey.xbm
 DESKTOPNAME=/usr/share/applications/finalkey.desktop
+GUIDESKTOPNAME=/usr/share/applications/finalkey-gui.desktop
 SHAREDIR=/usr/share/finalkey
 GUINAME=$SHAREDIR/GUI.jar
 
-if !which minicom &> /dev/null
+UNMET=""
+
+echo "Checking dependencies..."
+if ! which minicom &> /dev/null
 then
   UNMET="  minicom\n"
 fi
 
-if !which xterm &> /dev/null
+if ! which xterm &> /dev/null
 then
   UNMET=$UNMET"  xterm\n"
 fi
 
-if !which setsid &> /dev/null
+if ! which setsid &> /dev/null
 then
   UNMET=$UNMET"  setsid\n"
 fi
 
-if !which gunzip &> /dev/null
+if ! which gunzip &> /dev/null
 then
   UNMET=$UNMET"  gzip\n"
 fi
 
-if !which base64 &> /dev/null
+if ! which base64 &> /dev/null
 then
   UNMET=$UNMET"  base64/coreutils\n"
 fi
 
-if !which lsof &> /dev/null
+if ! which lsof &> /dev/null
 then
   UNMET=$UNMET"  lsof\n"
 fi
 
-if !which gcc &> /dev/null
+if ! which gcc &> /dev/null
 then
   UNMET=$UNMET"  gcc (Debian/Ubuntu: build-essential, Archlinux: base-devel)"
-fi
-
-if !which java &> /dev/null
-then
-   echo "Java not found, GUI option won't be installed."
 fi
 
 if [ "$UNMET" != "" ]
@@ -57,6 +56,8 @@ then
   echo -e "$UNMET"
   echo "Installation aborted."
   exit 1
+else 
+  echo "All required programs available."
 fi
 
 if [ `whoami` != "root" ]
@@ -78,50 +79,51 @@ function putFile
 }
 
 #Source code for the backup utility, how elegant!
-putFile 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 "/tmp/fkbck.c"
+putFile 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\
+Sgpr6zUAAA== "/tmp/fkbck.c"
 
+echo "Building the backup utility."
 if ! gcc --std=c99 -o "$BCKBINNAME" "/tmp/fkbck.c"
 then
   echo
@@ -169,28 +171,46 @@ hWoReqhOR7wfroprCcUiSakiUTVSG6nTlVYMLm2nmhY5MFmd375a6W63hy08EgDIb0JkPZYDCswc\
 0PF+VPC83kg5P+rH2/8RFfx4GEWkuXywDLEmsSWJ71V0FQOE5yZ5AVvZ0g6BAwAA $XICONNAME
 chmod a+r $XICONNAME
 
-# .desktop file so it will appear in the menu.
-putFile H4sIAMLJ9lIAAz3LPQ7CMAxA4d2nyAm4AMqASvlRJaZ0QgxWakLUxIkcSyW3BxbGJ33vfqS2aqlm\
-ZJX+ANcr2UOtKXrUWBhumMm6F5lTZExmog5DyZlY7QVl2VDIVGxtK7KYjIyBBMY3efv8DevXX33h\
-f+0qBxhQKRSJ1OzZTftZY4raAT4+IJanjgAAAA== $DESKTOPNAME
+# .desktop files so it will appear in the menu.
+putFile H4sICKWtGlQAA2ZpbmFsa2V5LmRlc2t0b3AAPcs7DsIwDADQ3afICAsXQBlQKR9VZSoTYrBSU6w2\
+dpRYKrk9YmF8w3scqcymybViuT5hqIn8IaWFAxqrwA0j+eFN7sSCi+uouk3PwkHjFhqNkcT8BfO4\
+YiaXsJRV8+giCk6Uof1Q8K9fnanCNaj8tUsyQYNGk2am4s9Dt78bL2wV4Atr1YqwmAAAAA== $DESKTOPNAME
 chmod a+r $DESKTOPNAME
+
+putFile H4sICLOtGlQAA2ZpbmFsa2V5LWd1aS5kZXNrdG9wAD3LsQ6CMBAA0P2+oqMu/oDpYBCRkDDBZBwu\
+cNYL9Nq0Z7B/ry6uL3m3M+VFQzS1aCp3GEoke4px5QmVg0CPnuzwJHNhwdV0VMyuGds9VMF7ErVX\
+TPOGiUzEnLeQZuNR0FGC+k2Tffza8l3uxdBOQf5yiOKgQiUXElO2zdAdR+WVtQB8AHNUDRCYAAAA $GUIDESKTOPNAME
+chmod a+r $GUIDESKTOPNAME
+
 
 #The udev file
 echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" > $UDEVNAME
 echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"1d50\", ATTRS{idProduct}==\"60a6\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" >> $UDEVNAME
 
 
-if which java &> /dev/null
+if uname -a | grep -i x86_64 &> /dev/null
 then
-  if uname -a | grep -i x86_64 &> /dev/null
+  echo "Downloading gui..."
+  mkdir -p $SHAREDIR
+  if wget -q --no-cache http://finalkey.net/gui/linux-current.jar -O $GUINAME
   then
-    echo "Downloading gui..."
-    mkdir -p $SHAREDIR
-    wget http://finalkey.net/gui/FinalKey_0.1-Linux_amd64.jar -O $GUINAME
+    echo "Done."
+  else
+    echo "Could not download the GUI."
   fi
+
+  if ! which java &> /dev/null
+  then
+    echo "java was not found, the GUI won't work."
+    echo "Install java if you wish to use the GUI, or"
+    echo "use the 'finalkey' command instead of 'finalkey gui'"
+  fi
+else
+  echo "The GUI is only available on linux x86_64."
 fi
 
-echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$BINNAME\n$BCKBINNAME\n$UDEVNAME"
+  
+echo -e "\nThe following files were installed:\n$ICONNAME\n$XICONNAME\n$DESKTOPNAME\n$GUIDESKTOPNAME\n$BINNAME\n$BCKBINNAME\n$UDEVNAME"
 
 if [ -f "$GUINAME" ]
 then
@@ -210,5 +230,5 @@ else
   echo "Restart udev or computer for changes to take effect."
 fi
 
-echo -e "If you have The Final Key plugged in at the moment, you need to unplug-\nand insert it again before you can use it.\n\nThe Final Key installed for user: $1.\nRun: finalkey to begin using it.\n"
+echo -e "If you have The Final Key plugged in at the moment, you need to unplug-\nand insert it again before you can use it.\n\nThe Final Key installed for user: $1.\nRun: finalkey --help to begin using it.\n"
 
