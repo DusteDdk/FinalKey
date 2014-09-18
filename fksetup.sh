@@ -2,17 +2,32 @@
 
 # License: WTFPL ( http://www.wtfpl.net/ )
 
-UDEVNAME=/etc/udev/rules.d/80-FinalKey.rules
-BINNAME=/usr/bin/finalkey
-BCKBINNAME=/usr/bin/finalkeybackup
-ICONNAME=/usr/share/pixmaps/finalkey.png
-XICONNAME=/usr/share/pixmaps/finalkey.xbm
-DESKTOPNAME=/usr/share/applications/finalkey.desktop
-GUIDESKTOPNAME=/usr/share/applications/finalkey-gui.desktop
-SHAREDIR=/usr/share/finalkey
-GUINAME=$SHAREDIR/GUI.jar
+if [ "$2" != "" ]
+then
+  FK_ROOT_DIR="$2"
+fi
+
+UDEVNAME="$FK_ROOT_DIR/etc/udev/rules.d/80-FinalKey.rules"
+BINNAME="$FK_ROOT_DIR/usr/bin/finalkey"
+BCKBINNAME="$FK_ROOT_DIR/usr/bin/finalkeybackup"
+ICONNAME="$FK_ROOT_DIR/usr/share/pixmaps/finalkey.png"
+XICONNAME="$FK_ROOT_DIR/usr/share/pixmaps/finalkey.xbm"
+DESKTOPNAME="$FK_ROOT_DIR/usr/share/applications/finalkey.desktop"
+GUIDESKTOPNAME="$FK_ROOT_DIR/usr/share/applications/finalkey-gui.desktop"
+SHAREDIR="$FK_ROOT_DIR/usr/share/finalkey"
+GUINAME="$SHAREDIR/GUI.jar"
 
 UNMET=""
+
+if [ "$FK_ROOT_DIR" != "" ]
+then
+  echo "Using: $FK_ROOT_DIR as root directory."
+  mkdir -p "$FK_ROOT_DIR/etc/udev/rules.d/"
+  mkdir -p "$FK_ROOT_DIR/usr/bin/"
+  mkdir -p "$FK_ROOT_DIR/usr/share/pixmaps/"
+  mkdir -p "$FK_ROOT_DIR/usr/share/applications/"
+  mkdir -p "$SHAREDIR"
+fi
 
 echo "Checking dependencies..."
 if ! which minicom &> /dev/null
@@ -62,7 +77,7 @@ fi
 
 if [ `whoami` != "root" ]
 then
-  sudo bash $0 $USER
+  sudo bash $0 $USER $FK_ROOT_DIR
 exit
 else
   if [ "$1" == "" ]
@@ -131,6 +146,7 @@ then
   echo "When the problem is resolved, re-run $0 to enable backup."
   echo "The installation will continue, but the backup feature will not work."
 else
+  echo "Done."
   chown $1 $BCKBINNAME 
   chmod u+x $BCKBINNAME
 fi
