@@ -1195,11 +1195,12 @@ void loop() {
   beat();
 
 
-  //Greet user
+  //If the firmware flash function is enabled, warn the user about it.
   if( eeprom_read_byte((uint8_t*)0) != 'F' )
   {
-    ptxtln("[WARNING! fwupdate:enabled]");
+    ptxtln("[NOTE: flash unlocked]");
   }
+  //Greet user
   ptxt("The Final Key\r\n#");
 
   if( !btnWait(BTN_TIMEOUT_NO_TIMEOUT) )
@@ -1384,28 +1385,20 @@ void loop() {
                getKbLayout();
              break;
              case 'e':
-               if( eeprom_read_byte((uint8_t*)0) == 'F' )
-               {
-                 ptxtln("\r\nEnable firmware upgrade?");
-               } else {
-                 ptxtln("\r\nDisable firmware upgrade?");
-               }
-               
-               if( btnWait(BTN_TIMEOUT_IMPORTANT) )
-               {
-                 if( eeprom_read_byte((uint8_t*)0) != 'F' )
+
+                 ptxt("\r\n\r\nFlash:\r\n  Press and hold: unlock\r\n  Short press: lock.\r\n\r\n#");
+
+                 if( btnWait(BTN_TIMEOUT_NO_TIMEOUT ) )
                  {
                    eeprom_write_byte(0,'F');
                    eeprom_write_byte((uint8_t*)1,'K');
-                   ptxtln("\r\n[fwupdate:disabled]");
+                   ptxtln("[locked]");
                  } else {
                    eeprom_write_byte(0,0);
                    eeprom_write_byte((uint8_t*)1,0);
-                   ptxtln("\r\n[fwupdate:enabled]");
+                   ptxtln("[unlocked]");
                  }
-               } else {
-                 ptxtln("[Aborted]");
-               }
+
              break;
                default:
                ptxtln("[unknown]");
