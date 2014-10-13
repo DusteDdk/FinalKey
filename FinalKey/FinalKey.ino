@@ -22,6 +22,8 @@
 #include <Wire.h>
 #include <EncryptedStorage.h>
 #include <I2ceep.h>
+		#include <avr/eeprom.h>
+
 
 
 //Edit this file to select included layouts.
@@ -1194,6 +1196,10 @@ void loop() {
 
 
   //Greet user
+  if( eeprom_read_byte((uint8_t*)0) != 'F' )
+  {
+    ptxtln("[bl:on]");
+  }
   ptxt("The Final Key\r\n#");
 
   if( !btnWait(BTN_TIMEOUT_NO_TIMEOUT) )
@@ -1376,6 +1382,18 @@ void loop() {
              break;
              case 'k':
                getKbLayout();
+             break;
+             case 'e':
+               if( eeprom_read_byte((uint8_t*)0) != 'F' )
+               {
+                 eeprom_write_byte(0,'F');
+                 eeprom_write_byte((uint8_t*)1,'K');
+                 ptxtln("\r\n[bl:off]");
+               } else {
+                 eeprom_write_byte(0,0);
+                 eeprom_write_byte((uint8_t*)1,0);
+                 ptxtln("\r\n[bl:on]");
+               }
              break;
                default:
                ptxtln("[unknown]");
