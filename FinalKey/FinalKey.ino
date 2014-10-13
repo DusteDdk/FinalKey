@@ -1198,7 +1198,7 @@ void loop() {
   //Greet user
   if( eeprom_read_byte((uint8_t*)0) != 'F' )
   {
-    ptxtln("[bl:on]");
+    ptxtln("[WARNING! fwupdate:enabled]");
   }
   ptxt("The Final Key\r\n#");
 
@@ -1384,15 +1384,27 @@ void loop() {
                getKbLayout();
              break;
              case 'e':
-               if( eeprom_read_byte((uint8_t*)0) != 'F' )
+               if( eeprom_read_byte((uint8_t*)0) == 'F' )
                {
-                 eeprom_write_byte(0,'F');
-                 eeprom_write_byte((uint8_t*)1,'K');
-                 ptxtln("\r\n[bl:off]");
+                 ptxtln("\r\nEnable firmware upgrade?");
                } else {
-                 eeprom_write_byte(0,0);
-                 eeprom_write_byte((uint8_t*)1,0);
-                 ptxtln("\r\n[bl:on]");
+                 ptxtln("\r\nDisable firmware upgrade?");
+               }
+               
+               if( btnWait(BTN_TIMEOUT_IMPORTANT) )
+               {
+                 if( eeprom_read_byte((uint8_t*)0) != 'F' )
+                 {
+                   eeprom_write_byte(0,'F');
+                   eeprom_write_byte((uint8_t*)1,'K');
+                   ptxtln("\r\n[fwupdate:disabled]");
+                 } else {
+                   eeprom_write_byte(0,0);
+                   eeprom_write_byte((uint8_t*)1,0);
+                   ptxtln("\r\n[fwupdate:enabled]");
+                 }
+               } else {
+                 ptxtln("[Aborted]");
                }
              break;
                default:
