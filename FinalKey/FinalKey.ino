@@ -68,7 +68,10 @@
 #define BTN_HOLD_TIME_FOR_ABORT 700
 
 //fireEntry will set these
-uint8_t lastEntryCmd=0, lastEntryNum=0;
+uint8_t lastEntryCmd[]={0,0,0,0}, lastEntryIdx=0;
+uint16_t lastEntryNum[]={0,0,0,0};
+
+
 
 const char clsStr[] = { 27, '[', '2','J',27,'[','H',0 };
 
@@ -505,8 +508,25 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
   REPEAT_FIRE:
   if( ES.getTitle(entryNum, eName ) )
   {
-    lastEntryCmd=what;
-    lastEntryNum=entryNum;
+    uint8_t i;
+    for(i=0; i<4;i++)
+    {
+      if( lastEntryCmd[i] == what && lastEntryNum[i] == entryNum )
+      {
+        i=10;
+      }
+    }
+    if(i==4)
+    {
+      lastEntryCmd[lastEntryIdx]=what;
+      lastEntryNum[lastEntryIdx]=entryNum;
+      lastEntryIdx++;
+      if(lastEntryIdx>3)
+      {
+        lastEntryIdx=0;
+      }
+    }
+    
     ptxtln("\r\n");    
     switch(what)
     {
@@ -1171,17 +1191,101 @@ void changePass()
   
   ptxtln("\r\n[abort]");
   
-}  
+}
 
 
 
-void loop() {
+void repeatEntry(uint8_t show)
+{
+  uint8_t i,cur;
+  char eName[33];
+  entry_t entry;
+  cur=lastEntryIdx;
+  if(cur==0)
+  {
+    cur=4;
+  }
+
+  cur--;
+  if( lastEntryCmd[cur] != 0 )
+  {
+    ptxtln("\r\n\r\n[repeat]");
+    for(i=0; i<4;i++)
+    {
+      if( lastEntryCmd[i] != 0 )
+      {
+        if(cur==i)
+        {
+          ptxt(" *");
+        } else {
+          ptxt("  ");
+        }
+        Serial.print(i+1);
+        ptxt(". (");
+        if(lastEntryNum[i] < 0x10)
+        {
+          Serial.write('0');
+        }
+        
+        Serial.print(lastEntryNum[i], HEX);
+  
+        ES.getTitle(lastEntryNum[i], eName);
+        ptxt(") - ");
+        Serial.write(eName);
+        ptxt( " [");
+        switch( lastEntryCmd[i] )
+        {
+          case CMD_FIRE_USER:
+            ptxt("U");
+          break;
+          case CMD_FIRE_PASS:
+            ptxt("P");
+          break;
+          case CMD_FIRE_BOTH:
+            ptxt("U][S][P");
+          break;
+          case CMD_SHOW_BOTH:
+            ptxt("SHOW");
+          break;
+        }
+
+        ptxt( "]\r\n");
+      }
+    }
+ 
+    if(show)
+    {
+      ptxt("[%/ENT] %");
+      i=getOneChar();
+      if(i>'0' && i<'5')
+      {
+        i -='1';
+      } else if(i==13)
+      {
+        i=cur;
+      } else {
+        ptxt("[abort]\r\n>");
+        return;
+      }
+    } else {
+      i=cur;
+    }
+    fireEntry(lastEntryCmd[i], lastEntryNum[i], 0 );    
+  } else {
+    ptxt("\r\n[not set]\r\n>");
+  }
+}
+
+
+
+void loop()
+{
   char cmd[4];
   uint8_t p=0;
   uint8_t cmdType=0;
   uint8_t btnCoolDown=200;
   
-  lastEntryCmd = 0;
+
   macroNum = -1;
 
 
@@ -1247,7 +1351,7 @@ void loop() {
          if(cmd[0]==' ')
          {
            cls();
-           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n s  Show\r\n r  Repeat last\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n ENTER  Search\r\n>");
+           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n s  Show\r\n r  Repeat recent\r\n R  Repeat last\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n ENTER  Search\r\n>");
            p=0;
          } else if(cmd[0]=='u')
          {
@@ -1287,7 +1391,7 @@ void loop() {
          } else if( cmd[0] == 'h' )
          {
            cls();
-           ptxt("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTs  Search and show\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xm  New macro\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xu  Choose # macro\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key.\r\n % = Number  : = Text Input\r\n ENT = ENTER\r\n ------------\r\n>");
+           ptxt("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTs  Search and show\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xm  New macro\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xu  Choose # macro\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key\r\n % = Number  : = Text Input\r\n ENT = ENTER > = Command\r\n ------------\r\n>");
            p=0;
          } else if( isHex(cmd[0]) )
          {
@@ -1309,14 +1413,12 @@ void loop() {
           cmdType=CMD_ROBOT; 
          } else if( cmd[0] == 'r' )
          {
-           if( lastEntryCmd != 0 )
-           {
-             ptxtln("\r\n[repeat]");
-             fireEntry(lastEntryCmd, lastEntryNum, 0 );
-           } else {
-             ptxt("\r\n[not set]\r\n>");
-           }
-           p=0;  
+           repeatEntry(1);
+           p=0;
+         } else if( cmd[0] == 'R' )
+         {
+           repeatEntry(0);
+           p=0;
          } else {
            ptxt("[unknown]\r\n>");
            p=0;
