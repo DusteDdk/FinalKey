@@ -103,26 +103,72 @@ const char passChars[] = {
 //Reads string from serial, zero terminates the string
 //Returns on enter, numChars is characters BEFORE 0 terminator ( so for a char[32], you write 31 m'kay?)
 //Returns false if user has entered more than numChars
-bool getStr( char* dst, uint8_t numChars, bool echo )
+
+void setRng(boolean doSet)
+{
+  uint8_t attempts=0;
+  if( doSet )
+  {
+    //Wait for Entropy to be available.
+    analogWrite(ledPin, 128);
+    while( !Entropy.available() )
+    {
+        delay(100);
+        attempts++;
+        if(attempts==30) //If there's no random number after 3 seconds, re-initialize the rng.
+        {
+          analogWrite(ledPin, 192);
+          Entropy.Initialize();
+          attempts=0;
+        }
+    }
+    randomSeed( Entropy.random() );
+  }
+  digitalWrite(ledPin,1);
+}
+
+bool getStr( char* dst, const uint8_t numChars, bool echo )
 {
   uint8_t keycheck;
   char inchar;
   uint8_t index=0;
+  char scramble=0;
+  boolean shouldSetRng=false;
   memset( dst, 0, numChars+1 );
   while( 1 )
   {
+    
+    if( !digitalRead(btnPin) )
+    {
+      shouldSetRng=true;
+      while( !digitalRead(btnPin) ) { };
+      scramble++;
+      randomSeed(scramble);
+      digitalWrite(ledPin, 0);
+      delay(50);
+    }
+
     if( Serial.available() )
     {
       inchar = Serial.read();
 
       if( inchar == 8 ) //If backspace is pressed
       {
-        if(index > 0 )
+        //If backspace is pressed when scamble is on, delete the whole string.
+        if(scramble)
+        {
+          scramble=0;
+          digitalWrite(ledPin, 1);
+          index=0;
+          memset( dst, 0, numChars+1 );
+          Serial.print("<<\r\n");
+        } else if(index > 0 )
         {
           dst[--index]=0;
         }
       } else if( inchar == 13 ) //If Enter is pressed
       {
+        setRng(shouldSetRng);
         return(1);
       } else if( inchar == 27 ) //If Escape is pressed
       {
@@ -130,7 +176,7 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
         memset( dst, 0, numChars+1 );
       } else if( index == numChars ) //If this key makes the string longer than allowed
       {
-        return(0);
+        goto GETSTR_RETERR;
       } else {
         for(keycheck=0; keycheck < 92; keycheck++ )
         {
@@ -142,9 +188,16 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
         if(keycheck == 92 )
         {
           ptxt("\r\n[Unsupported:");Serial.print(inchar);ptxtln("]");
-          return(0);
+          goto GETSTR_RETERR;
         } else {
+          
+          if(scramble)
+          {
+            inchar = (inchar^random(254)+1)&0xFF;
+          }
+          
           dst[index++] = inchar;
+          
         }
       }
 
@@ -155,12 +208,17 @@ bool getStr( char* dst, uint8_t numChars, bool echo )
         Serial.write("[K");
         Serial.write(dst);
       }
+
     }
     if(!Serial)
     {
-      return(0);
+        goto GETSTR_RETERR;
     }
   }
+  
+  GETSTR_RETERR:
+    setRng(shouldSetRng);
+    return(0);
 }
 
 void printKbLayoutList()
@@ -382,13 +440,10 @@ uint8_t login(bool header)
 
 
 void setup() {
-  // put your setup code here, to run once:
-  Wire.begin();
-
-  //We use the slow random number generator to seed the fast one (used for deletion)
+  
   Entropy.Initialize();
-  while( !Entropy.available() );
-  randomSeed( Entropy.random() );    
+  Wire.begin();
+  setRng(true);  
   Serial.begin(9600);
   
   pinMode(ledPin, OUTPUT);
