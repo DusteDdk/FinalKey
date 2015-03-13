@@ -1,7 +1,7 @@
 Firmware for the Final Key - A hardware password manager for Linux, Windows and OSX with encryption.
 ==============
 This software comes without any kind of warranty, and nobody is responsible.<br>
-Instructions: http://cyberstalker.dk/finalkey/
+Instructions: http://finalkey.net/
 - ArduinoHacks are for ARDUINO 1.5.5 BETA 2013.11.28<br>
 - The diff is for 1.0.5 (du'h, it's already in the name..).<br>
 - The finalkeybackup.c is a linux tool to allow taking backup of your key (lock the key with q and close minicom before trying that).<br>
@@ -9,14 +9,16 @@ Instructions: http://cyberstalker.dk/finalkey/
 
 Credits:
 --------------
-<pre>
-Directory                       - Description           - Author                - License       - URL
-FinalKey                        - Firmware for FinalKey - DusteD                - WTFPL         - http://cyberstalker.dk/finalkey/
-libraries/EncryptedStorage      - Data store/retrieve   - DusteD                - WTFPL         - http://cyberstalker.dk/finalkey/
-libraries/I2ceep                - I2C EEPROM access     - DusteD                - WTFPL         - http://cyberstalker.dk/finalkey/
-libraries/TermTool              - Lazy mess, macros     - DusteD                - WTFPL         - http://cyberstalker.dk/finalkey/
+<pre>Directory                       - Description           - Author                - License       - URL
+FinalKey                        - Firmware for FinalKey - DusteD                - GPL v3        - http://finalkey.net/
+libraries/EncryptedStorage      - Data store/retrieve   - DusteD                - GPL v3        - http://finalkey.net/
+libraries/I2ceep                - I2C EEPROM access     - DusteD                - GPL v3        - http://finalkey.net/
+libraries/TermTool              - Lazy mess, macros     - DusteD                - GPL v3        - http://finalkey.net/
 libraries/AES                   - AES Encryption        - MarkT / Brian Gladman - Header: AES.h - http://forum.arduino.cc/index.php/topic,88890.0.html http://utter.chaos.org.uk/~markt/AES-library.zip
 libraries/Entropy               - Random Number Gen.    - Walter Anderson       - GPL v3        - http://code.google.com/p/avr-hardware-random-number-generation/
 ArduinoHacks                    - Changes to Arduino    - DusteD / Arduino      - LGPL          - http://arduino.cc
+
+File                            - Description           - Author                - License       - URL
+finalkeybackup.c                - Backup program        - DusteD                - WTFPL         - http://finalkey.net/
 </pre>
 

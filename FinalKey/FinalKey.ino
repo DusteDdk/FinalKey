@@ -22,8 +22,7 @@
 #include <Wire.h>
 #include <EncryptedStorage.h>
 #include <I2ceep.h>
-		#include <avr/eeprom.h>
-
+#include <avr/eeprom.h>
 
 
 //Edit this file to select included layouts.
