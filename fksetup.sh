@@ -213,7 +213,7 @@ if uname -a | grep -i x86_64 &> /dev/null
 then
   echo "Downloading gui..."
   mkdir -p $SHAREDIR
-  if wget -q --no-cache http://finalkey.net/gui/linux-current.jar -O $GUINAME
+  if wget -q --no-cache http://finalkey.net/download/linux-current.jar -O $GUINAME
   then
     echo "Done."
   else
