@@ -200,7 +200,12 @@ chmod a+r $GUIDESKTOPNAME
 
 
 #The udev file
-echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" > $UDEVNAME
+echo "# 1d50:60ca was granted by OpenMoko and registered for FinalKey, this is the official VID/PID pair." > $UDEVNAME
+echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"1d50\", ATTRS{idProduct}==\"60ca\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" >> $UDEVNAME
+echo -e "\n# 2341:8036 is registered to the Arduino SA Leonardo board, this rule is unlikely to interfere, but will be removed in the future." >> $UDEVNAME
+echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"2341\", ATTRS{idProduct}==\"8036\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" >> $UDEVNAME
+echo -e "\n# 1d50:60a6 is registered to the https://github.com/bvernoux/hydrafw/wiki - remove this rule if you have a hydrabus and it interferes." >> $UDEVNAME
+echo "# This rule is kept for compatibility with older FinalKeys, if your FinalKey can be firmware-upgraded, please consider upgrading it." >> $UDEVNAME
 echo SUBSYSTEMS==\"usb\", KERNEL==\"ttyACM*\", ATTRS{idVendor}==\"1d50\", ATTRS{idProduct}==\"60a6\",SYMLINK+=\"FinalKey\",GROUP=\"$1\" OWNER=\"$1\" >> $UDEVNAME
 
 
