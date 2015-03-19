@@ -280,10 +280,11 @@ void EncryptedStorage::format( byte* pass, char* name )
   //Serial.print(F("Entries Written\r\n"));
   txt(F("\rEncrypting."));
 
+  putPass(pass);
+
   //Copy Identifier to memory
   for(uint8_t i=0; i < HEADER_EEPROM_IDENTIFIER_LEN; i++)
     identifier[i]=pgm_read_byte (& eepromIdentifierTxt[i]);
-  
   
   //Write the cleartext stuff. Identifier and Name.
   I2E_Write( EEPROM_IDENTIFIER_LOCATION, identifier, HEADER_EEPROM_IDENTIFIER_LEN );
@@ -291,7 +292,7 @@ void EncryptedStorage::format( byte* pass, char* name )
   I2E_Write( EEPROM_DEVICENAME_LOCATION,(byte*)name, 32 );
  // Serial.print(F("Name Written\r\n"));
 
-  putPass(pass);
+  
   
   txtln(F("\r[Done]      "));
 }
@@ -369,7 +370,8 @@ void EncryptedStorage::putIv( byte* dst )
   do {
     for(uint8_t i = 0; i < 16; i++)
     {
-      while( ! Entropy.available() ) {}
+      while( ! Entropy.available() ) { analogWrite(10, 250);}
+      digitalWrite(10,1);
       dst[i]=Entropy.random(0xff);  
     }
 

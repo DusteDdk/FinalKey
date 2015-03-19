@@ -39,7 +39,6 @@ public:
   void Initialize(void);
   uint32_t random(void);
   uint32_t random(uint32_t max);
-  uint32_t random(uint32_t min, uint32_t max);
   uint8_t available(void);
  private:
   ENTROPY_LONG_WORD share_entropy;

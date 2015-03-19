@@ -44,7 +44,7 @@ void EntropyClass::Initialize(void)
   gWDT_pool_count = 0;
   cli();                         // Temporarily turn off interrupts, until WDT configured
   MCUSR = 0;                     // Use the MCU status register to reset flags for WDR, BOR, EXTR, and POWR
-  _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE);
+ // _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE);
   // WDTCSR |= _BV(WDCE) | _BV(WDE);// WDT control register, This sets the Watchdog Change Enable (WDCE) flag, which is  needed to set the 
   _WD_CONTROL_REG = _BV(WDIE);            // Watchdog system reset (WDE) enable and the Watchdog interrupt enable (WDIE)
   sei();                         // Turn interupts on
@@ -142,23 +142,6 @@ uint32_t EntropyClass::random(uint32_t max)
 	  while (retVal >= max)           
 	    retVal = random() / slice;
 	}                                 
-    }
-  return(retVal);
-}
-
-// This function returns a uniformly distributed integer in the range of 
-// of [min,max).  
-uint32_t EntropyClass::random(uint32_t min, uint32_t max)
-{
-  uint32_t slice, tmp_random, tmax;
-
-  tmax = max - min;
-  if (tmax < 2)
-    retVal=0;
-  else
-    {
-      tmp_random = random(tmax);
-      retVal = min + tmp_random;
     }
   return(retVal);
 }

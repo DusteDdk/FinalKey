@@ -104,27 +104,11 @@ const char passChars[] = {
 //Returns on enter, numChars is characters BEFORE 0 terminator ( so for a char[32], you write 31 m'kay?)
 //Returns false if user has entered more than numChars
 
-void setRng(boolean doSet)
+void setRng()
 {
-  uint8_t attempts=0;
-  if( doSet )
-  {
-    //Wait for Entropy to be available.
-    analogWrite(ledPin, 128);
-    while( !Entropy.available() )
-    {
-        delay(100);
-        attempts++;
-        if(attempts==30) //If there's no random number after 3 seconds, re-initialize the rng.
-        {
-          analogWrite(ledPin, 192);
-          Entropy.Initialize();
-          attempts=0;
-        }
-    }
-    randomSeed( Entropy.random() );
-  }
+  while( Entropy.available() < 2 ) { analogWrite(ledPin, 250); }
   digitalWrite(ledPin,1);
+  randomSeed( Entropy.random() );
 }
 
 bool getStr( char* dst, const uint8_t numChars, bool echo )
@@ -133,14 +117,13 @@ bool getStr( char* dst, const uint8_t numChars, bool echo )
   char inchar;
   uint8_t index=0;
   char scramble=0;
-  boolean shouldSetRng=false;
+
   memset( dst, 0, numChars+1 );
   while( 1 )
   {
     
     if( !digitalRead(btnPin) )
     {
-      shouldSetRng=true;
       while( !digitalRead(btnPin) ) { };
       scramble++;
       randomSeed(scramble);
@@ -168,7 +151,7 @@ bool getStr( char* dst, const uint8_t numChars, bool echo )
         }
       } else if( inchar == 13 ) //If Enter is pressed
       {
-        setRng(shouldSetRng);
+        setRng();
         return(1);
       } else if( inchar == 27 ) //If Escape is pressed
       {
@@ -217,7 +200,7 @@ bool getStr( char* dst, const uint8_t numChars, bool echo )
   }
   
   GETSTR_RETERR:
-    setRng(shouldSetRng);
+    setRng();
     return(0);
 }
 
@@ -440,14 +423,16 @@ uint8_t login(bool header)
 
 
 void setup() {
-  
-  Entropy.Initialize();
-  Wire.begin();
-  setRng(true);  
-  Serial.begin(9600);
-  
   pinMode(ledPin, OUTPUT);
   pinMode(btnPwr, OUTPUT);
+
+  Entropy.Initialize();
+
+  Wire.begin();
+  Serial.begin(9600);
+
+  setRng();  
+
   digitalWrite(btnPwr, LOW); //Sink 
   pinMode(btnPin, INPUT); // set pin to input
 
