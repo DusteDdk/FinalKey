@@ -412,8 +412,8 @@ void EncryptedStorage::importData()
       crca = crc8((uint8_t*)buf,32);
       if( crca != crcb )
       {
+	I2E_Write( 0, (byte*)"C", 1 );
 	txt("C");
-	I2E_Write( 0, (byte*)"[CRC]", 6 );
 	while(1) {};
       } else {
 	txt("O");
@@ -421,6 +421,7 @@ void EncryptedStorage::importData()
       I2E_Write(i, (byte*)buf, 32);
       i+=32;
     } else {
+      I2E_Write( 0, (byte*)"F", 1 );
       txt("F");
       break;
     }
