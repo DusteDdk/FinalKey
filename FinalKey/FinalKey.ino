@@ -106,9 +106,9 @@ const char passChars[] = {
 
 void setRng()
 {
-  while( Entropy.available() < 2 ) { analogWrite(ledPin, 250); }
-  digitalWrite(ledPin,1);
+  analogWrite(ledPin, 250);
   randomSeed( Entropy.random() );
+  digitalWrite(ledPin,1);
 }
 
 bool getStr( char* dst, const uint8_t numChars, bool echo )
@@ -426,7 +426,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   pinMode(btnPwr, OUTPUT);
 
-  Entropy.Initialize();
+  Entropy.initialize();
 
   Wire.begin();
   Serial.begin(9600);
@@ -519,8 +519,6 @@ void putRandomChars( char* dst, uint8_t len, uint8_t useSpecial, char* specials 
   }
   
   ptxtln("\r\n[generate]"); 
-  //Wait for entropy pool to fill
-  while(Entropy.available()!=8);
   
   for( uint8_t idx = 0; idx < len; idx++)
   {
@@ -1329,7 +1327,7 @@ void loop()
 
 
 
-  beat();
+ // beat();
 
 
   //Wait for serial connection
