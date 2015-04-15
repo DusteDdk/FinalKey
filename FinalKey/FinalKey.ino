@@ -1593,6 +1593,12 @@ void loop()
              case 'l': //List for machines
              machineList();
              break;
+             case 'r': //Random source
+             while( !Serial.available() )
+             {
+               Serial.println(Entropy.random(0xff),HEX);
+             }
+             break;
            }
          }
 
