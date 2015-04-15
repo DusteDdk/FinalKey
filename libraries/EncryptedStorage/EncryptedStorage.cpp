@@ -24,7 +24,7 @@
 #include <TermTool.h>
 
 #define HEADER_EEPROM_IDENTIFIER_LEN 12
-static char eepromIdentifierTxt[HEADER_EEPROM_IDENTIFIER_LEN] PROGMEM  =  "[FinalKey2]";
+const static char eepromIdentifierTxt[HEADER_EEPROM_IDENTIFIER_LEN] PROGMEM  =  "[FinalKey2]";
 
 #define HEADER_SIZE 256
 //We reserve 1024 bytes for a rainy day
@@ -370,9 +370,9 @@ void EncryptedStorage::putIv( byte* dst )
   do {
     for(uint8_t i = 0; i < 16; i++)
     {
-      while( ! Entropy.available() ) { analogWrite(10, 250);}
-      digitalWrite(10,1);
+      analogWrite(10, 250);
       dst[i]=Entropy.random(0xff);  
+      digitalWrite(10,1);
     }
 
   } while( ivIsInvalid(dst) );

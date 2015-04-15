@@ -1,6 +1,6 @@
 #ifdef KBMAP_FRPC_INUSE
 
-uint8_t FRPC_asciimap[256] PROGMEM =
+const uint8_t FRPC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,    // NUL
 	0x00,NOMOD,    // SOH
@@ -136,7 +136,7 @@ uint8_t FRPC_asciimap[256] PROGMEM =
 
 #ifdef KBMAP_FRMAC_INUSE
 
-uint8_t FRMAC_asciimap[256] PROGMEM =
+const uint8_t FRMAC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,    // NUL
 	0x00,NOMOD,    // SOH

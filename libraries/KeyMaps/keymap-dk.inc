@@ -2,7 +2,7 @@
 
 #ifdef KBMAP_DKPC_INUSE
 
-uint8_t DKPC_asciimap[256] PROGMEM =
+const uint8_t DKPC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH
@@ -139,7 +139,7 @@ uint8_t DKPC_asciimap[256] PROGMEM =
 
 #ifdef KBMAP_DKMAC_INUSE
 
-uint8_t DKMAC_asciimap[256] PROGMEM =
+const uint8_t DKMAC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH

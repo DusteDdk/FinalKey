@@ -2,7 +2,7 @@
 
 #ifdef KBMAP_SEPC_INUSE
 
-uint8_t SEPC_asciimap[256] PROGMEM =
+const uint8_t SEPC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH
@@ -139,7 +139,7 @@ uint8_t SEPC_asciimap[256] PROGMEM =
 
 #ifdef KBMAP_SEMAC_INUSE
 
-uint8_t SEMAC_asciimap[256] PROGMEM =
+const uint8_t SEMAC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH

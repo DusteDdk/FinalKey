@@ -1,6 +1,6 @@
 #ifdef KBMAP_USPC_INUSE || KBMAP_USMAC_INUSE
 
-uint8_t USPC_asciimap[256] PROGMEM =
+const uint8_t USPC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH
