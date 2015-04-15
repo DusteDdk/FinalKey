@@ -1,6 +1,11 @@
 // Entropy - A entropy (random number) generator for the Arduino
+//   The latest version of this library will always be stored in the following
+//   google code repository:
+//     http://code.google.com/p/avr-hardware-random-number-generation/source/browse/#git%2FEntropy
+//   with more information available on the libraries wiki page
+//     http://code.google.com/p/avr-hardware-random-number-generation/wiki/WikiAVRentropy
 //
-// Copyright 2012 by Walter Anderson
+// Copyright 2014 by Walter Anderson
 //
 // This file is part of Entropy, an Arduino library.
 // Entropy is free software: you can redistribute it and/or modify
@@ -16,38 +21,44 @@
 // You should have received a copy of the GNU General Public License
 // along with Entropy.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <Arduino.h>
 #include <Entropy.h>
-#include <util/atomic.h>
 
-const uint8_t gWDT_buffer_SIZE=32;
-const uint8_t WDT_POOL_SIZE=8;
+
 const uint8_t WDT_MAX_8INT=0xFF;
 const uint16_t WDT_MAX_16INT=0xFFFF;
 const uint32_t WDT_MAX_32INT=0xFFFFFFFF;
-uint8_t gWDT_buffer[gWDT_buffer_SIZE];
-uint8_t gWDT_buffer_position;
-uint8_t gWDT_loop_counter;
-volatile uint8_t gWDT_pool_start;
-volatile uint8_t gWDT_pool_end;
-volatile uint8_t gWDT_pool_count;
-volatile uint32_t gWDT_entropy_pool[WDT_POOL_SIZE];
+
+ const uint8_t gWDT_buffer_SIZE=32;
+ const uint8_t WDT_POOL_SIZE=8;
+ uint8_t gWDT_buffer[gWDT_buffer_SIZE];
+ uint8_t gWDT_buffer_position;
+ uint8_t gWDT_loop_counter;
+ volatile uint8_t gWDT_pool_start;
+ volatile uint8_t gWDT_pool_end;
+ volatile uint8_t gWDT_pool_count;
+ volatile uint32_t gWDT_entropy_pool[WDT_POOL_SIZE];
+
+ static uint8_t eTries =0;
 
 // This function initializes the global variables needed to implement the circular entropy pool and
 // the buffer that holds the raw Timer 1 values that are used to create the entropy pool.  It then
 // Initializes the Watch Dog Timer (WDT) to perform an interrupt every 2048 clock cycles, (about 
 // 16 ms) which is as fast as it can be set.
-void EntropyClass::Initialize(void)
+void EntropyClass::initialize(void)
 {
+
   gWDT_buffer_position=0;
   gWDT_pool_start = 0;
   gWDT_pool_end = 0;
   gWDT_pool_count = 0;
-  cli();                         // Temporarily turn off interrupts, until WDT configured
-  MCUSR = 0;                     // Use the MCU status register to reset flags for WDR, BOR, EXTR, and POWR
- // _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE);
-  // WDTCSR |= _BV(WDCE) | _BV(WDE);// WDT control register, This sets the Watchdog Change Enable (WDCE) flag, which is  needed to set the 
-  _WD_CONTROL_REG = _BV(WDIE);            // Watchdog system reset (WDE) enable and the Watchdog interrupt enable (WDIE)
-  sei();                         // Turn interupts on
+
+   cli();                                             
+  MCUSR = 0;                                         
+  _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE); 
+  _WD_CONTROL_REG = (1<<WDIE);                       
+  sei();   
+
 }
 
 // This function returns a uniformly distributed random integer in the range
@@ -58,15 +69,31 @@ void EntropyClass::Initialize(void)
 // The pool is implemented as an 8 value circular buffer
 uint32_t EntropyClass::random(void)
 {
-  uint8_t waiting;
+    _WD_CONTROL_REG = (1<<WDIE);
+  uint8_t waiting=0;
   while (gWDT_pool_count < 1)
+  {
     waiting += 1;
+    delay(10);
+    
+    if(waiting > 20)
+    {
+        waiting=0;
+        cli();
+        MCUSR = 0;
+        _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE); 
+        _WD_CONTROL_REG = (1<<WDIE);                       
+        sei();   
+        
+    }
+  }
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     retVal = gWDT_entropy_pool[gWDT_pool_start];
     gWDT_pool_start = (gWDT_pool_start + 1) % WDT_POOL_SIZE;
     --gWDT_pool_count;
   }
+  
   return(retVal);
 }
 
@@ -103,6 +130,7 @@ uint16_t EntropyClass::random16(void)
   word_position = word_position % 2;
   return(retVal16);
 }
+
 
 // This function returns a uniformly distributed integer in the range of 
 // of [0,max).  The added complexity of this function is required to ensure
@@ -146,25 +174,37 @@ uint32_t EntropyClass::random(uint32_t max)
   return(retVal);
 }
 
-// This function returns a unsigned char (8-bit) with the number of unsigned long values
-// in the entropy pool
-uint8_t EntropyClass::available(void)
+// This function returns a uniformly distributed integer in the range of 
+// of [min,max).  
+uint32_t EntropyClass::random(uint32_t min, uint32_t max)
 {
-  return(gWDT_pool_count);
+  uint32_t tmp_random, tmax;
+
+  tmax = max - min;
+  if (tmax < 1)
+    retVal=min;
+  else
+    {
+      tmp_random = random(tmax);
+      retVal = min + tmp_random;
+    }
+  return(retVal);
 }
+
+
+
+
+// Circular buffer is not needed with the speed of the Arduino Due trng hardware generator
 
 // This interrupt service routine is called every time the WDT interrupt is triggered.
 // With the default configuration that is approximately once every 16ms, producing 
 // approximately two 32-bit integer values every second. 
 //
 // The pool is implemented as an 8 value circular buffer
+
 ISR(WDT_vect)
 {
-#if defined( __AVR_ATtiny25__ ) || defined( __AVR_ATtiny45__ ) || defined( __AVR_ATtiny85__ )  
-  gWDT_buffer[gWDT_buffer_position] = TCNT0;
-#else
-  gWDT_buffer[gWDT_buffer_position] = TCNT1L; // Record the Timer 1 low byte (only one needed) 
-#endif
+  gWDT_buffer[gWDT_buffer_position] = TCNT1L;
   gWDT_buffer_position++;                     // every time the WDT interrupt is triggered
   if (gWDT_buffer_position >= gWDT_buffer_SIZE)
   {
@@ -190,6 +230,8 @@ ISR(WDT_vect)
       ++gWDT_pool_count;
   }
 }
+
+
 
 // The library implements a single global instance.  There is no need, nor will the library 
 // work properly if multiple instances are created.
