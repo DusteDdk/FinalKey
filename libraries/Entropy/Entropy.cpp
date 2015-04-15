@@ -39,7 +39,6 @@ const uint32_t WDT_MAX_32INT=0xFFFFFFFF;
  volatile uint8_t gWDT_pool_count;
  volatile uint32_t gWDT_entropy_pool[WDT_POOL_SIZE];
 
- static uint8_t eTries =0;
 
 // This function initializes the global variables needed to implement the circular entropy pool and
 // the buffer that holds the raw Timer 1 values that are used to create the entropy pool.  It then
@@ -47,18 +46,16 @@ const uint32_t WDT_MAX_32INT=0xFFFFFFFF;
 // 16 ms) which is as fast as it can be set.
 void EntropyClass::initialize(void)
 {
-
   gWDT_buffer_position=0;
   gWDT_pool_start = 0;
   gWDT_pool_end = 0;
   gWDT_pool_count = 0;
-
-   cli();                                             
-  MCUSR = 0;                                         
-  _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE); 
-  _WD_CONTROL_REG = (1<<WDIE);                       
-  sei();   
-
+  
+    cli();
+    MCUSR = 0;
+    _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE);
+    _WD_CONTROL_REG = _BV(WDIE);
+    sei();   
 }
 
 // This function returns a uniformly distributed random integer in the range
@@ -67,26 +64,19 @@ void EntropyClass::initialize(void)
 // should be called first to ensure that entropy exists.
 //
 // The pool is implemented as an 8 value circular buffer
+
 uint32_t EntropyClass::random(void)
 {
-    _WD_CONTROL_REG = (1<<WDIE);
-  uint8_t waiting=0;
+    uint8_t waiting;
   while (gWDT_pool_count < 1)
   {
-    waiting += 1;
-    delay(10);
-    
-    if(waiting > 20)
-    {
-        waiting=0;
-        cli();
-        MCUSR = 0;
-        _WD_CONTROL_REG |= (1<<_WD_CHANGE_BIT) | (1<<WDE); 
-        _WD_CONTROL_REG = (1<<WDIE);                       
-        sei();   
-        
-    }
+      if( !(_WD_CONTROL_REG&WDIE) )
+      {
+        _WD_CONTROL_REG = _BV(WDIE);
+      }
   }
+
+  
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
     retVal = gWDT_entropy_pool[gWDT_pool_start];
@@ -228,7 +218,7 @@ ISR(WDT_vect)
       gWDT_pool_start = (gWDT_pool_start + 1) % WDT_POOL_SIZE;  
     else // Add another unsigned long (32 bits) to the entropy pool
       ++gWDT_pool_count;
-  }
+  }                      
 }
 
 
