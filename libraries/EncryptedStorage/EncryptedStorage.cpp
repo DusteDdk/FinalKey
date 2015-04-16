@@ -208,22 +208,32 @@ void EncryptedStorage::delEntry(uint8_t entryNum)
 {
   uint16_t offset = entryOffset(entryNum);
   entry_t dat;
+  entry_t dat2;
   
-  memset(&dat,0,sizeof(entry_t));  
+  memset(&dat,0,16); //Zero out first 16 bytes of entry so we can write an all zero iv.  
   //Write an all zero iv to indicate it's empty
  // Serial.print("\r\nEntry num: "); Serial.print(entryNum);Serial.print(" iv offset before ");Serial.print(offset);
   offset = I2E_Write( offset, (byte*)&dat, 16 );
   
-  //Overwrite entry with random numbers
+  //Fill entry with random numbers
   for(uint8_t i=0; i < ENTRY_SIZE; i++)
   {
     ((byte*)(&dat))[i] = random(255);
   }
   
-  //Write trash
-  //Serial.print("\r\nEntry: "); Serial.print(entryNum);Serial.print(" data offset before ");Serial.print(offset);  
-  I2E_Write( offset, (byte*)&dat, ENTRY_SIZE );  
-  //Serial.print(" after ");Serial.print(offset);
+  //Write random data
+  I2E_Write( offset, (byte*)&dat, ENTRY_SIZE );
+  //Read it back
+  I2E_Read( offset, (byte*)&dat2, ENTRY_SIZE );
+  
+  //Compare, to see that we read what we wrote
+  if( memcmp( &dat, &dat2, ENTRY_SIZE ) !=  0 )
+  {
+     strcpy( dat.title, "[Bad]" );
+     dat.passwordOffset=0;
+     putEntry( entryNum, &dat );
+  }
+  
 }
 
 void EncryptedStorage::changePass( byte* newPass, byte* oldPass )
