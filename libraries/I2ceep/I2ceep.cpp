@@ -117,6 +117,7 @@ void I2ceep::power(uint8_t state)
 
   //Give the eeprom some time to start up.
   delay(10);
+  Wire.setClock(400000);
 }
 
 I2ceep I2E = I2ceep();
