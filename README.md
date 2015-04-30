@@ -2,8 +2,7 @@ Firmware for the Final Key - A hardware password manager for Linux, Windows and 
 ==============
 This software comes without any kind of warranty, and nobody is responsible.<br>
 Instructions: http://finalkey.net/
-- ArduinoHacks are for ARDUINO 1.5.5 BETA 2013.11.28<br>
-- The diff is for 1.0.5 (du'h, it's already in the name..).<br>
+- A hacked version of arduino is needed, it can be found here: https://github.com/DusteDdk/ArduinoIDE_1.6.3-FinalKey<br>
 - The finalkeybackup.c is a linux tool to allow taking backup of your key (lock the key with q and close minicom before trying that).<br>
 - The fksetup.sh script can be run on Ubuntu/Debian/Archlinux and will fix permissions to device and add /dev/FinalKey rule (for all leonardo boards, no incompatibilities with existing Arduino setups though).
 
