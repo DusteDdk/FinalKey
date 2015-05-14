@@ -2,7 +2,7 @@
 
 #ifdef KBMAP_DEPC_INUSE
 
-const uint8_t const DEPC_asciimap[256] PROGMEM =
+const uint8_t DEPC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,       	// NUL
 	0x00,NOMOD,       	// SOH
@@ -148,7 +148,7 @@ const uint8_t const DEPC_asciimap[256] PROGMEM =
 
 #ifdef KBMAP_DEMAC_INUSE
 
-const uint8_t const DEMAC_asciimap[256] PROGMEM =
+const uint8_t DEMAC_asciimap[256] PROGMEM =
 {
 	0x00,NOMOD,             // NUL
 	0x00,NOMOD,             // SOH
