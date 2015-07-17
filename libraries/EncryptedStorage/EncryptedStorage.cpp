@@ -22,9 +22,20 @@
 #include <util/atomic.h>
 #include <Wire.h>
 #include <TermTool.h>
+#include <sha256.h>
+
+//#define it to turn on verbose loggin (you need to disable some keyboard layouts because there is not enough flash)
+#undef DEBUG_PRINT
+
+//512 iterations, about 11 seconds
+//256 iterations, about 5.5 seconds
+//128 iterations, about 3 seconds
+#define KEY_HASH_ITERATIONS 200
 
 #define HEADER_EEPROM_IDENTIFIER_LEN 12
-const static char eepromIdentifierTxt[HEADER_EEPROM_IDENTIFIER_LEN] PROGMEM  =  "[FinalKey2]";
+const static char eepromIdentifierTxt[HEADER_EEPROM_IDENTIFIER_LEN] PROGMEM  =  "[FinalKey3]";
+
+
 
 #define HEADER_SIZE 256
 //We reserve 1024 bytes for a rainy day
@@ -42,22 +53,48 @@ const static char eepromIdentifierTxt[HEADER_EEPROM_IDENTIFIER_LEN] PROGMEM  =  
 //Header:
 //0-11  	- Identifier (12 bytes)
 //12-43 	- Devicename (32 bytes)
-//44-59		- Iv (16 bytes)
-//60-91		- Encrypted password (32 bytes)
-//92-123	- Background noise for password (32 bytes)
-//124-124	- Keyboard Layout (1 byte)
+//44-59		- Mac Iv (16 bytes)
+//60-91		- Encrypted MAC (32 bytes)
+//92-123	- Cleartext MAC (32 bytes)
+//124-187       - Salt (64 bytes)
+//188-188	- Keyboard Layout (1 byte)
 
 #define EEPROM_IDENTIFIER_LOCATION 0
 #define EEPROM_DEVICENAME_LOCATION 12
+
 #define EEPROM_IV_LOCATION 44
-#define EEPROM_PASS_CIPHER_LOCATION 60
-#define EEPROM_PASS_BACKGROUND_LOCATION 92
-#define EEPROM_KEYBOARD_LAYOUT_LOCATION	124
+#define EEPROM_MAC_CIPHER_LOCATION 60
+#define EEPROM_MAC_CLEARTEXT_LOCATION 92
+#define EEPROM_SALT_LOCATION 124
+
+#define EEPROM_KEYBOARD_LAYOUT_LOCATION	188
 
 //Read the IV which comes after 12 + 32 bytes and is 16 bytes long. (Identifier + Unit name)
-#define headerIdentifierOffsetAndIv(iv) I2E_Read( EEPROM_IV_LOCATION, iv, 16 )
+#define getMacIv(iv) I2E_Read( EEPROM_IV_LOCATION, iv, 16 )
+#define getMacCipher(ciph) I2E_Read( EEPROM_MAC_CIPHER_LOCATION, ciph, 32 )
+#define getMacClear(mac) I2E_Read( EEPROM_MAC_CLEARTEXT_LOCATION, mac, 32 )
+#define getSalt(salt) I2E_Read( EEPROM_SALT_LOCATION, salt, 64 );
+
 #define entryOffset( entryNum ) ((EEPROM_ENTRY_START_ADDR)+(EEPROM_ENTRY_DISTANCE*entryNum))
 
+#if defined(DEBUG_PRINT)
+void debPr(char* str, byte* dat, int len)
+{
+    Serial.println(str);
+    for(int i=0; i < len; i++)
+    {
+        if( dat[i] < 0xf )
+        {
+            ptxt("0");
+        }
+      Serial.print((uint8_t)dat[i], HEX);
+    }
+    Serial.println(); 
+}
+
+#else
+  #define debPr //
+#endif
 
 
 bool EncryptedStorage::readHeader(char* deviceName)
@@ -83,43 +120,43 @@ void EncryptedStorage::setBanner(char* banner)
 }
 
 
-bool EncryptedStorage::unlock( byte* k )
+bool EncryptedStorage::unlock( byte* pass )
 {
   byte key[32];
-  byte bck[32];
+  byte clearMac[32];
+  byte mac[32];
   byte iv[16];
-  bool success = FALSE;
 
-  uint16_t offset = headerIdentifierOffsetAndIv(iv);
+  debPr("pass ", pass, 32);
+  //Get the MAC IV
+  getMacIv(iv);
+  debPr("iv ", iv, 16);
 
-  //Read the encrypted password which comes after the IV
-  offset = I2E_Read( offset, key, 32 );
+  //Get the MAC cleartext
+  getMacClear(clearMac);
+  debPr("clearMac ", clearMac, 32);
   
-  //Read the background noise for the password
-  I2E_Read( offset, bck, 32 );
-  
-  //xor it with zero padded key
-  for(uint8_t i = 0 ; i < 32; i++ )
+  //Get the encrypted mac
+  getMacCipher(mac);
+  debPr("encmac ", mac, 32);
+
+  //Make the key
+  genKey(pass, key);
+
+  //Set the key
+  aes.set_key(key, 256);
+
+  //Decrypt the encrypted mac
+  aes.cbc_decrypt (mac, mac, 2, iv);
+  debPr("decmac ", mac, 32);
+
+  //Check if they match
+  if( memcmp(mac, clearMac, 32) != 0 )
   {
-    k[i] ^= bck[i];
+    return(FALSE);
   }
-  
-  //Set key
-  aes.set_key(k, 256);  
 
-  //Decrypt
-  if( aes.cbc_decrypt (key, key, 2, iv) == SUCCESS )
-  {
-    success=TRUE;
-    for(uint8_t i = 0 ; i < 32; i++ )
-    {
-      if( key[i] != k[i] )
-      {
-	success=FALSE;
-      }
-    }
-  }
-  return(success);
+  return(TRUE);
 }
 
 
@@ -209,7 +246,7 @@ void EncryptedStorage::delEntry(uint8_t entryNum)
   uint16_t offset = entryOffset(entryNum);
   entry_t dat;
   entry_t dat2;
-  
+
   memset(&dat,0,16); //Zero out first 16 bytes of entry so we can write an all zero iv.  
   //Write an all zero iv to indicate it's empty
  // Serial.print("\r\nEntry num: "); Serial.print(entryNum);Serial.print(" iv offset before ");Serial.print(offset);
@@ -229,66 +266,62 @@ void EncryptedStorage::delEntry(uint8_t entryNum)
   //Compare, to see that we read what we wrote
   if( memcmp( &dat, &dat2, ENTRY_SIZE ) !=  0 )
   {
-     strcpy( dat.title, "[Bad]" );
+     strcpy( dat.title, "<BAD>" );
      dat.passwordOffset=0;
      putEntry( entryNum, &dat );
   }
-  
+
 }
 
 void EncryptedStorage::changePass( byte* newPass, byte* oldPass )
 {
-  byte obck[32];
+  char unused[32];
   entry_t entry;
+  
+  byte oldKey[32];
+  byte newKey[32];
 
-  //Note: oldPass was or'ed with background noise by unlock
-  ptxtln("Changing password.");
-  //putPass will xor the background noise into our newPass, so it's ready to use for encryption.
+  genKey(oldPass, oldKey);
+  
   putPass(newPass);
 
+  genKey(newPass, newKey);
+
   // For each non-empty entry
-  ptxtln("Encrypting:");
+  printBusy();
   for(uint16_t i = 0; i < 256; i++ )
   {
-   Serial.write('\r');txt(i);Serial.write('/');txt(255);
-    if( getTitle( (uint8_t)i, (char*)obck ) )
+  // Serial.write('\r');txt(i);Serial.write('/');txt(255);
+    if( getTitle( (uint8_t)i, unused ) )
     {
       //Set old key
-      aes.set_key( oldPass, 256 );
+      aes.set_key( oldKey, 256 );
       
       //Read entry
       getEntry( (uint8_t)i, &entry );
 
       //Set new key
-      aes.set_key( newPass, 256 );
+      aes.set_key( newKey, 256 );
 
       //Write entry
       putEntry( (uint8_t)i, &entry );
 
     }
   }
-
-  //Clean up a bit
-  memset( newPass, 0, 32 );
-  memset( oldPass, 0, 32 );
-  memset( &entry, 0, sizeof(entry) );
-
-  ptxtln("\r[done]  ");
+  
+  printOk();
 }
 
 void EncryptedStorage::format( byte* pass, char* name )
 {
   byte identifier[HEADER_EEPROM_IDENTIFIER_LEN];
-  //Delete Entries
-  txtln(F("Formatting:"));
 
+  //Delete Entries
   for(uint16_t i=0; i < NUM_ENTRIES; i++ )
   {
-    Serial.write('\r');txt(i);Serial.write('/');txt(255);
     delEntry((uint8_t)i);
   }
   //Serial.print(F("Entries Written\r\n"));
-  txt(F("\rEncrypting."));
 
   putPass(pass);
 
@@ -301,10 +334,6 @@ void EncryptedStorage::format( byte* pass, char* name )
  // Serial.print(F("Identifier Written\r\n"));
   I2E_Write( EEPROM_DEVICENAME_LOCATION,(byte*)name, 32 );
  // Serial.print(F("Name Written\r\n"));
-
-  
-  
-  txtln(F("\r[Done]      "));
 }
 
 
@@ -320,8 +349,8 @@ static bool ivIsInvalid( byte* dst )
     invalid=TRUE;
   }
   
-  //The first one is the one for the header.
-  headerIdentifierOffsetAndIv(iv);
+  //The first iv is the one for the MAC in the header.
+  getMacIv(iv);
   if(memcmp(iv, dst, 16) == 0)
   {    
     invalid=TRUE;
@@ -341,38 +370,105 @@ static bool ivIsInvalid( byte* dst )
   return(invalid);
 }
 
+
+//Generate a key
+//Sure, too few iterations, and the hash should be expensive,
+//Reality check: This is on a 16 mhz 8 bit micro, nothing this chip can do will be expensive.
+//Pick a 32 byte password and be happy.
+void EncryptedStorage::genKey(byte* pass, byte* keyDest )
+{
+  byte* hash;
+  byte code[64];
+  
+  ptxt("\r[KEYGEN]");
+  //Read the salt  
+  getSalt(code);    
+  debPr("salt ", code, 64);
+
+  //XOR password into the salt
+  for(uint8_t i = 16 ; i < 48; i++ )
+  {
+    code[i] ^= pass[i-16];
+  }
+  debPr("unhashed ", code, 64);
+  
+  //Chew on it a bit
+  for(int i=0; i < KEY_HASH_ITERATIONS; i++ )
+  {
+    hash = Sha256.hash( code, 64 );
+
+   //Xor it with the previous hash
+   for(int p=0; p<32; p++)
+   {
+       if(p%2==0)
+       {
+        code[p] ^= (hash[p]|0xF0 ); 
+        code[p+32] ^= (hash[p]|0x0F ); 
+       } else {
+        code[p+32] ^= (hash[p]|0xF0 ); 
+        code[p] ^= (hash[p]|0x0F ); 
+       }
+       debPr("step ", code, 64);
+   }
+    
+  }
+  //Hash it once more, and copy it to the destination
+  hash = Sha256.hash( code, 64 );
+  memcpy(keyDest, hash, 32);
+  ptxt("\r        \r");
+}
+
 void EncryptedStorage::putPass( byte* pass )
 {
-  byte iv[16];
-  byte key[32];
-  byte bck[32];
-    
-  //Generate background noise for password
-  putIv( bck );
-  putIv( (bck+16) );
 
-  //xor it into existing password
-  for(uint8_t i = 0 ; i < 32; i++ )
+    
+  byte code[64];
+  byte iv[16];
+  byte mac[32];
+
+  debPr("pass ", pass,32);
+  //Generate salt for the code
+  for(uint8_t i = 0; i < 64; i++)
   {
-    pass[i] ^= bck[i];
+    code[i]=Entropy.random(0xff);
   }
   
-  //Generate IV
-  putIv( iv );
+  //Write the salt now
+  I2E_Write( EEPROM_SALT_LOCATION, code, 64 );
   
-  //Write the IV before it's changed by the encryption.
+  //Create the key, reuse first 32 bytes of code
+  genKey(pass, code);
+  
+
+  //Generate IV for MAC
+  putIv( iv );
+  debPr("iv ", iv, 16);
+
+  //Write the IV before it's changed by the encryption algorithm.
   I2E_Write( EEPROM_IV_LOCATION, iv, 16 );
- // Serial.print(F("Iv Written\r\n"));
 
-  //Encrypt the password.
-  aes.set_key(pass, 256);  
-  aes.cbc_encrypt(pass, key, 2, iv);
+  //Generate the MAC
+  putIv( mac );
+  putIv( mac+16 );
+  debPr("clearmac ", mac, 32);
 
-  //Write encrypted key
-  I2E_Write(EEPROM_PASS_CIPHER_LOCATION, key, 32);
+
+  //Write the MAC
+  I2E_Write( EEPROM_MAC_CLEARTEXT_LOCATION, mac, 32 );
+  
+  //Encrypt the mac.
+  aes.set_key(code, 256);   //First 256 (32 byte) bit of the code is now the hashed key
+  aes.cbc_encrypt(mac, code+32, 2, iv); //Last 32 bytes of the code is now the cipher
+  debPr("encmac ", code+32, 32);
+
+  //Write mac cipher
+  I2E_Write(EEPROM_MAC_CIPHER_LOCATION, code+32, 32);
   
   //Write background noise
-  I2E_Write(EEPROM_PASS_BACKGROUND_LOCATION, bck, 32);  
+  ///I2E_Write(EEPROM_PASS_BACKGROUND_LOCATION, bck, 32);  
+  
+ 
+  
 }
 
 void EncryptedStorage::putIv( byte* dst )
@@ -380,9 +476,7 @@ void EncryptedStorage::putIv( byte* dst )
   do {
     for(uint8_t i = 0; i < 16; i++)
     {
-      analogWrite(10, 250);
-      dst[i]=Entropy.random(0xff);  
-      digitalWrite(10,1);
+      dst[i]=Entropy.random(0xff);
     }
 
   } while( ivIsInvalid(dst) );
@@ -443,7 +537,7 @@ void EncryptedStorage::exportData()
 {
   byte buf[32];
   uint8_t crc;
-  ptxt("[BEGIN]"); 
+  ptxt("[FK]"); 
   for(uint16_t i=0; i < 64000; i+=32)
   {
     I2E_Read( i, buf, 32 );
@@ -454,7 +548,7 @@ void EncryptedStorage::exportData()
     crc = crc8( (uint8_t*)buf, 32 );
     Serial.write( (char)crc );
   }
-  ptxt("[END]"); 
+  ptxt("[KF]"); 
 }
 
 uint16_t EncryptedStorage::getNextEmpty()

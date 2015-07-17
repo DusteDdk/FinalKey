@@ -51,7 +51,7 @@ class KeyMaps
 #define KBMAP_A KBMAP_USPC
 #define KBMAP_B KBMAP_DKPC
 #define KBMAP_C KBMAP_DKMAC
-//#define KBMAP_D KBMAP_SEMAC
+#define KBMAP_D KBMAP_SEMAC
 
 #include "keymap-us.h"
 #include "keymap-dk.h"

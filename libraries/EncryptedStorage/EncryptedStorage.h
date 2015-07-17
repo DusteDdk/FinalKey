@@ -25,8 +25,8 @@
 //Struct must be %16 == 0
 typedef struct {
   char title[32]; // Title needs to be two blocks for seperate decryption
-  uint8_t seperator;		//Character to type between user and pass (ignored when macro)
-  uint8_t passwordOffset;	//Where the password starts in the string of data (0 = macro)
+  uint8_t seperator;		//Character to type between user and pass
+  uint8_t passwordOffset;	//Where the password starts in the string of data
   char data[190];
 } entry_t;
 
@@ -35,7 +35,7 @@ class EncryptedStorage
 public:
   void begin(); //Initialize entropy and power on eeprom
   bool readHeader(char* deviceName); //If eeprom is ready to use, puts the saved deviceName into deviceName, and return true. False = format.
-  bool unlock( byte* k ); //Returns true if it was possible to decrypt using that key, enables further decryption
+  bool unlock( byte* pass ); //Returns true if it was possible to decrypt using that pass, sets key, enables further decryption
   void lock();
   bool getTitle( uint8_t entryNum, char* title); //Only decrypts the name (for speed)
   bool getEntry( uint8_t entryNum, entry_t* entry ); //Reads and decrypts an entry, return true if entry is valid, otherswise entry is empty.
@@ -50,6 +50,7 @@ public:
   void setKeyboardLayout(uint8_t lang);
   uint8_t getKeyboardLayout();
 private:
+  void genKey(byte* pass, byte* keyDest );
   void putPass( byte* pass );
   void putIv( byte* dst );
   AES aes;

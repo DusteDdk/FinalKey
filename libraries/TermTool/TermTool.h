@@ -7,4 +7,11 @@
 #define ptxt(str) Serial.print(F(str))
 #define ptxtu(str) txtUnderline(F(str))
 void freeRam();
+
+
+void printAbort();
+void printError();
+void printOk();
+void printBusy();
+
 #endif

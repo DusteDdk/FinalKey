@@ -23,7 +23,7 @@
 #include <EncryptedStorage.h>
 #include <I2ceep.h>
 #include <avr/eeprom.h>
-
+#include <sha256.h>
 
 //Edit this file to select included layouts.
 #include <KeyMaps.h>
@@ -44,11 +44,9 @@
 #define CMD_LOCK_DEV 6
 #define CMD_HELP 7
 #define CMD_NEW_ACCOUNT 8
-#define CMD_NEW_MACRO 9
 #define CMD_FORMAT_DEVICE 10
 #define CMD_DELETE_ENTRY 11
 #define CMD_OVERRIDE_ENTRY 12
-#define CMD_SET_MACRO 13
 #define CMD_SET_BANNER 14
 #define CMD_IMPORT_DATA 15
 #define CMD_EXPORT_DATA 16
@@ -103,63 +101,32 @@ const char passChars[] = {
 //Reads string from serial, zero terminates the string
 //Returns on enter, numChars is characters BEFORE 0 terminator ( so for a char[32], you write 31 m'kay?)
 //Returns false if user has entered more than numChars
-
-void setRng()
-{
-  analogWrite(ledPin, 250);
-  randomSeed( Entropy.random() );
-  digitalWrite(ledPin,1);
-}
-
 bool getStr( char* dst, const uint8_t numChars, bool echo )
 {
   uint8_t keycheck;
   char inchar;
   uint8_t index=0;
-  char scramble=0;
 
   memset( dst, 0, numChars+1 );
   while( 1 )
   {
-    
-    if( !digitalRead(btnPin) )
-    {
-      while( !digitalRead(btnPin) ) { };
-      scramble++;
-      randomSeed(scramble);
-      digitalWrite(ledPin, 0);
-      delay(50);
-    }
-
     if( Serial.available() )
     {
       inchar = Serial.read();
 
       if( inchar == 8 ) //If backspace is pressed
       {
-        //If backspace is pressed when scamble is on, delete the whole string.
-        if(scramble)
+        if( index > 0 )
         {
-          scramble=0;
-          digitalWrite(ledPin, 1);
-          index=0;
-          memset( dst, 0, numChars+1 );
-          Serial.print("<<\r\n");
-        } else if(index > 0 )
-        {
-          dst[--index]=0;
+          --index;
+          dst[index]=0;
         }
       } else if( inchar == 13 ) //If Enter is pressed
       {
-        setRng();
         return(1);
-      } else if( inchar == 27 ) //If Escape is pressed
-      {
-        index=0;
-        memset( dst, 0, numChars+1 );
       } else if( index == numChars ) //If this key makes the string longer than allowed
       {
-        goto GETSTR_RETERR;
+        return(0);
       } else {
         for(keycheck=0; keycheck < 92; keycheck++ )
         {
@@ -170,15 +137,10 @@ bool getStr( char* dst, const uint8_t numChars, bool echo )
         }
         if(keycheck == 92 )
         {
-          ptxt("\r\n[Unsupported:");Serial.print(inchar);ptxtln("]");
-          goto GETSTR_RETERR;
+          ptxtln("\r\n[InvalChar]");
+          return(0);
         } else {
-          
-          if(scramble)
-          {
-            inchar = (inchar^random(254)+1)&0xFF;
-          }
-          
+
           dst[index++] = inchar;
           
         }
@@ -195,13 +157,9 @@ bool getStr( char* dst, const uint8_t numChars, bool echo )
     }
     if(!Serial)
     {
-        goto GETSTR_RETERR;
+        return(0);
     }
   }
-  
-  GETSTR_RETERR:
-    setRng();
-    return(0);
 }
 
 void printKbLayoutList()
@@ -225,7 +183,7 @@ void getKbLayout()
   uint8_t k;
   while(1)
   {
-    ptxtln("Select keyboard layout:");
+    ptxtln("Layout:");
     printKbLayoutList();
   ptxt("% ");
     
@@ -258,17 +216,16 @@ void getKbLayout()
       }
       if( k == INVALID_KEYBOARD_LAYOUT )
       {
-        ptxtln("\r\n[Invalid choice]");
+        printError();
       } else {
         kbmaps.setKbMap(k);
         if( testChars() )
         {
           ES.setKeyboardLayout(k);
-          ptxtln("\r\n[saved]");
+          printOk();
           return;
         }
       }
-    Serial.println();
   }//While 1 ends here
 }
 
@@ -276,11 +233,10 @@ void getKbLayout()
 //This function must not exit before a successfull format.
 void format()
 {
-  //Two imput buffers, for easy password comparison.
+  //Two input buffers, for easy password comparison.
   char bufa[33];
   char bufb[33];
-  ptxtln("Choose password (1-32)");
-  ptxtln("It is important that you remember this password.\r\nThe Final Key can not be unlocked without it.");
+  ptxtln("Master (1-32)");
   bool fail=1;
 
   while(fail)
@@ -288,7 +244,7 @@ void format()
     ptxt("Psw:");
     if( getStr(bufa, 32,0 ) )
     {
-      ptxt("\r\nRepeat:");
+      ptxt("\r\nAgain:");
       if( getStr(bufb, 32,0 ) )
       {
         if(memcmp(bufa,bufb,32)==0)
@@ -298,12 +254,12 @@ void format()
       }
     }
     if(fail)
-      ptxtln("\r\n[ERROR]");
+      printError();
   }
   fail=1;
   while(fail)
   {
-    ptxtln("\r\nName, (0-31):");
+    ptxtln("\r\nName (0-31):");
     if( getStr(bufb, 31,1 ) )
     {
       fail=0;
@@ -335,6 +291,7 @@ uint8_t btnWait( int timeOut )
       ptxt("\r");txt((int)(timeOut/1000));ptxt(" # ");
     }
     
+    //Blink the led
     delay(1);
     digitalWrite(ledPin, state);
     onTime++;
@@ -361,8 +318,7 @@ uint8_t btnWait( int timeOut )
       timeOut--;
     }
   }
-  //Blink the led
-  digitalWrite(ledPin, state);
+
 
   
 
@@ -391,14 +347,14 @@ uint8_t login(bool header)
    //Try reading the header.
   if( !ES.readHeader(devName) )
   {
-    ptxtln("Need format before use");
+    ptxtln("[Format]");
     format();
   } else {
     if(header)
     {
       Serial.write('{');
       Serial.print(devName);
-      ptxt("}\r\nPass:");
+      ptxt("}\r\nPsw:");
     }
     getStr( key,32, 0 );
    
@@ -407,14 +363,11 @@ uint8_t login(bool header)
        ret=1;
        if(header)
         {
-          ptxtln("\r\n[Granted]");
           kbmaps.setKbMap(ES.getKeyboardLayout());
         }        
      } else {
-       if(header)
-       {
-         ptxtln("\r\n[Denied]");
-       }
+        printError();
+        delay(2000);
      }
   }
   
@@ -431,13 +384,17 @@ void setup() {
   Wire.begin();
   Serial.begin(9600);
 
-  setRng();  
+  analogWrite(ledPin, 250);
+  randomSeed( Entropy.random() );
+  digitalWrite(ledPin,1);
 
   digitalWrite(btnPwr, LOW); //Sink 
   pinMode(btnPin, INPUT); // set pin to input
 
   //Enable internal pullups for button
   digitalWrite(btnPin, HIGH);
+  
+  
 }
 
 void beat()
@@ -481,11 +438,12 @@ uint8_t strToHex( char* str )
 bool testChars()
 {
   int i;
-  ptxt("\r\nTo verify the selected layout works, focus a blank text-field\r\nthen press the key or long-press to skip the test.\r\n#");
+  char* spec="Specials:";
+  ptxt("\r\nFocus blank input, press btn or long-press to skip test.\r\n#");
   if(btnWait(BTN_TIMEOUT_NO_TIMEOUT))
   {
-    ptxt("Supported specials:");
-    Keyboard.print("Supported specials:");
+    Serial.print(spec);
+    Keyboard.print(spec);
     for(i=62; i < 92; i++)
     {
       Serial.print(passChars[i]);
@@ -493,7 +451,7 @@ bool testChars()
       Keyboard.press(passChars[i]);
       Keyboard.release(passChars[i]);
     }
-    ptxt("\r\nLayout correct if identical to above line.\r\nCorrect [y/n] ?");
+    ptxt("\r\nLayout correct if identical to above.\r\nCorrect [y/N] ?");
     if( getOneChar() == 'y' )
     {
       return(1);
@@ -501,7 +459,7 @@ bool testChars()
       return(0);
     }
   } else {
-    ptxt("\r\n[skip test]");
+    ptxt("\r\n[skip]");
   }
 }
 
@@ -509,7 +467,8 @@ void putRandomChars( char* dst, uint8_t len, uint8_t useSpecial, char* specials 
 {
   char pool[256];
   long maxRv = (useSpecial)?91:61; //Not numbers but indexes
-    
+
+  ptxt("\r\n[RANDGEN]\r");
   memcpy( pool, passChars, maxRv );
   
   if( specials )
@@ -517,32 +476,25 @@ void putRandomChars( char* dst, uint8_t len, uint8_t useSpecial, char* specials 
     memcpy( (pool+maxRv), specials, strlen(specials));
     maxRv += strlen(specials);
   }
-  
-  ptxtln("\r\n[generate]"); 
-  
+
   for( uint8_t idx = 0; idx < len; idx++)
   {
-    Serial.print("\r[");
-    txt(idx);
-    Serial.write('/');
-    txt(len);
-    Serial.write(']');
     dst[idx] = pool[(uint8_t)Entropy.random(maxRv)];
   }
-  ptxtln("\r[done]   ");
+  printOk();
   
 }
 
-void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
+void fireEntry(uint8_t what, int16_t entryNum)
 {
   char eName[33];
   entry_t entry;
   if( entryNum == -1 )
   {
-    ptxt("[abort]\r\n>");
+    printAbort();
     return;
   }
-  REPEAT_FIRE:
+
   if( ES.getTitle(entryNum, eName ) )
   {
     uint8_t i;
@@ -579,87 +531,77 @@ void fireEntry(uint8_t what, int16_t entryNum, bool noWait)
       case CMD_SHOW_BOTH:
         ptxt("[SHOW] ");
         break;
-      default:
-        ptxt("[ERROR]");
-        break;
     }
     txt(eName);
-    ptxt(" ?\r\n");
+    ptxtln(" ?");
     
-    if(noWait || btnWait(BTN_TIMEOUT_FIRE))
+    if(btnWait(BTN_TIMEOUT_FIRE))
     {
       ES.getEntry(entryNum, &entry);
+            
+      //Empty serial input buffer
+      clearSerialInput();
       
-      if( entry.passwordOffset == 0 && entry.seperator == 0 )
+      if( what == CMD_FIRE_BOTH || what == CMD_FIRE_USER )
       {
         Keyboard.print( entry.data );
-        ptxt(" [M]");
-      } else {
-      
-        //Empty serial input buffer
-        clearSerialInput();
-        
-        if( what == CMD_FIRE_BOTH || what == CMD_FIRE_USER )
-        {
-          Keyboard.print( entry.data );
-          ptxt(" [U]");
-        }
-        
-        if( what == CMD_FIRE_BOTH )
-        {
-          Keyboard.write( entry.seperator );
-          delay(150);
-          ptxt(" [S]");
-        }
-        
-        if( what == CMD_FIRE_BOTH || what == CMD_FIRE_PASS )
-        {
-          Keyboard.print( (entry.data)+entry.passwordOffset );
-          ptxt(" [P]");
-        }
-        
-        if( what == CMD_FIRE_BOTH )
-        {
-          Keyboard.write(10);
-          ptxt(" [E]");
-        }
-        
-
-        
-        if( what == CMD_SHOW_BOTH )
-        {
-          ptxt("\r\nAccount: ");          
-          if(entryNum < 16)
-          {
-            Serial.write('0');
-          }          
-          Serial.print(entryNum,HEX);
-          Serial.print(" - ");
-          Serial.print(eName);
-          
-          ptxt("\r\n  Username: ");
-          Serial.print( entry.data );
-          ptxt("\r\n  Password: ");
-          Serial.print( (entry.data)+entry.passwordOffset );
-          ptxt("\r\n");
-        }
+        ptxt(" [U]");
       }
       
-        //Empty serial input buffer (in case user triggered it to write into the finalkey)
-        if( Serial.available() )
+      if( what == CMD_FIRE_BOTH )
+      {
+        Keyboard.write( entry.seperator );
+        delay(150);
+        ptxt(" [S]");
+      }
+      
+      if( what == CMD_FIRE_BOTH || what == CMD_FIRE_PASS )
+      {
+        Keyboard.print( (entry.data)+entry.passwordOffset );
+        ptxt(" [P]");
+      }
+      
+      if( what == CMD_FIRE_BOTH )
+      {
+        Keyboard.write(10);
+        ptxt(" [E]");
+      }
+      
+
+      
+      if( what == CMD_SHOW_BOTH )
+      {
+        ptxt("\r\nAccount: ");          
+        if(entryNum < 16)
         {
-          clearSerialInput();     
-          ptxt("\r\n[ERROR] Wrong window, try again.");
-          //Wohoo! A GOTO!! YES! FINALLY! (I could make it recursive, and risk stack overflow, or make a nasty while around the function, but I decided this was less noisy)
-          goto REPEAT_FIRE;
-        } else {
-          ptxt(" [done]\r\n>");
-        }
+          Serial.write('0');
+        }          
+        Serial.print(entryNum,HEX);
+        Serial.print(" - ");
+        Serial.print(eName);
+        
+        ptxt("\r\n  Usr: ");
+        Serial.print( entry.data );
+        ptxt("\r\n  Psw: ");
+        Serial.print( (entry.data)+entry.passwordOffset );
+        ptxt("\r\n");
+      }
+ 
+      //Detect if finalkey typed into its own terminal.
+      if( Serial.available() )
+      {
+        clearSerialInput();     
+        ptxt("\r\n[Focus]");
+        printError();
+      } else {
+        Serial.println();
+        printOk();
+      }
     } else {
-      ptxt("[abort]\r\n>");
+      printAbort();
     }
   } else {
-    ptxt("[empty]\r\n>");
+    ptxtln("\r\n[empty]");
   }
 }
 
@@ -741,16 +683,16 @@ void newAccount(int entryNum)
   }
     
   
-  ptxtln("Account Title, (0-31):");
+  ptxtln("Title (0-31):");
   if( getStr( entry.title, 31, 1 ) )
   {
-    ptxtln("\r\nUser:");
+    ptxtln("\r\nUsr:");
     if( getStr(entry.data, 189, 1 ) )
     {
       entry.passwordOffset = strlen(entry.data)+1;
       maxLen = 189-(entry.passwordOffset); //190 - 1 for password and - the offset
 
-      ptxt("\r\nPsw type? \r\n 1 = manual\r\n 2 = auto\r\n%");
+      ptxt("\r\nType? \r\n 1 = manual\r\n 2 = auto\r\n%");
 
           r=getOneChar();
           if(r=='1')
@@ -799,7 +741,7 @@ void newAccount(int entryNum)
 
           if(save)
           {
-            ptxt("\r\nSeperator?\r\n 1 = [TAB]\r\n 2 = [ENT]\r\n 3 = Choose\r\n%");
+            ptxt("\r\nSeperator?\r\n 1 = [TAB]\r\n 2 = [ENT]\r\n%");
   
             r=getOneChar()-'0';
             if( r==1 )
@@ -808,10 +750,6 @@ void newAccount(int entryNum)
             } else if(r==2)
             {
               entry.seperator=10;
-            } else if(r==3)
-            {
-              ptxt("\r\n>");
-              entry.seperator = getOneChar();
             } else {
               save=0;
             }
@@ -819,13 +757,13 @@ void newAccount(int entryNum)
 
           if( save )
           {
-            ptxt("\r\n[save entry ");
+            ptxt("\r\n[save ");      
             Serial.print(entryNum, HEX);
             txtln("]");
 
             ES.putEntry( (uint8_t)entryNum, &entry );
 
-            ptxtln("[done]");
+            printOk();
             return;
           }
 
@@ -834,86 +772,7 @@ void newAccount(int entryNum)
   } //Got title
   
   ABORT_NEW_ACCOUNT:
-  
-  ptxtln("\r\n[abort]");
-}
-
-
-void newMacro(int16_t entryNum)
-{
-  entry_t entry;
-  char data[190];
-  bool save=0;
-  memset(data,0,190);
-
-  if(entryNum == -1 )
-  {
-    entryNum = ES.getNextEmpty();
-    
-    if( entryNum== 256 )
-    {
-      ptxtln("\r\n[full]");
-      return;
-    }
-    
-    if( !btnWait( BTN_TIMEOUT_IMPORTANT ) )
-    {
-      goto ABORT_NEW_MACRO;
-    }
-
-  }
-
-  ptxtln("\r\nMacro Title (0-31):");
-  if( getStr( entry.title, 31, 1 ) )
-  {
-    ptxtln("\r\nEmpty line with . to save:");
-    uint8_t offset=0;
-    while( 1 )
-    {
-      if(getStr(data+offset, (189 - offset),1))
-      {
-        if( strlen( (data+offset) ) == 1 && *(data+offset)=='.' )
-        {
-          data[offset-1]=0; //Remove the \n and . at the end ;)
-          save=1;
-          break;
-        } else {
-          offset = strlen(data);
-          data[offset]='\n';
-          offset++;
-          if( (189 - offset) < 2 )
-          {
-            ptxtln("\r\nTxt too long!");
-            goto ABORT_NEW_MACRO;
-          }
-          ptxt("\r\n[Free:");
-          txt( (189 - offset)-2 );
-          ptxtln("]");
-        }
-      } else {
-        goto ABORT_NEW_MACRO;
-      }
-    }
-
-    
-  }
-  
-  
-  if(save)
-  {
-    ptxt("\r\n[save entry ");
-    Serial.print(entryNum, HEX);
-    txtln("]");
-    entry.passwordOffset=0;
-    entry.seperator=0;
-    memcpy( entry.data, data, 190 );
-    ES.putEntry( entryNum, &entry );
-    ptxtln("[done]");
-    return; 
-  }
-  
-  ABORT_NEW_MACRO:
-  ptxtln("\r\n[abort]");
+  printAbort();
 }
 
 
@@ -930,69 +789,35 @@ void delEntry(bool override)
     {
       if(override)
       {
-        ptxt("Override ");
+        ptxt("Replace ");
       } else {
         ptxt("Del ");
       }
       txt(ename);
-      ptxtln(" [y/n] ?");
+      ptxt(" [y/N] ?");
 
       if( getOneChar() == 'y' )
       {
 
         if( btnWait( BTN_TIMEOUT_IMPORTANT ) )
         {
-          ES.getEntry((uint8_t)en, &entry);
           ES.delEntry((uint8_t)en);
           if(override)
           {
-            if(entry.seperator==0 && entry.passwordOffset==0)
-            {
-              newMacro(en);
-            } else {
-              newAccount(en);
-            }
+            newAccount(en);
           } else {
-            txt("\r\n[deleted]");
+            printOk();
           }
           return;
         }
       }
-    } else {
-      ptxtln("[empty]");
-      return;
     }
   }
 
-  ptxtln("[abort]");
+  printAbort();
 }
 
-int16_t macroNum = -1;
 
-void setMacro()
-{
-  entry_t entry;
-  int en = collectNum();
-  
-  if( en != -1 )
-  {
-    if( ES.getTitle( en,(entry.title) ) )
-    {
-      ES.getEntry((uint8_t)en, &entry);
-      if(entry.seperator!=0 || entry.passwordOffset!=0)
-      {
-        ptxtln("Not a macro, but you're the boss.");
-      }
-      macroNum=(uint8_t)en;
-      ptxtln("[set]");
-      return;
-    } else {
-      ptxtln("[empty]");
-    }
-  }
-  ptxtln("[abort]");
-  
-}
 
 
 void setBanner()
@@ -1005,12 +830,12 @@ void setBanner()
     if(getStr( banner,31,1) )
     {
       ES.setBanner(banner);
-      ptxtln("\r\n[done]");
+      printOk();
       return;
     }
   }
   
-  ptxt("\r\n[abort]");
+  printAbort();
 }
 
 uint8_t page=0;
@@ -1084,7 +909,7 @@ void entryList(int8_t dir)
  {
    Serial.println();
  }
- Serial.write('>');
+
 }
 
 void machineList()
@@ -1139,11 +964,12 @@ void search(uint8_t cmd)
   {
     if(strlen(str) < 1)
     {
-      ptxt("[empty keyword]\r\n>");
+      printAbort();
       return;
     }
     strToUpper(str);
-    ptxtln("\r\n[search]");
+
+    Serial.println();
     slen=strlen(str);
     for( int16_t idx = 0; idx < 256; idx++ )
     {
@@ -1176,49 +1002,48 @@ void search(uint8_t cmd)
     switch(hits)
     {
       case 1:
-        fireEntry(cmd, fire, 0 );
+        fireEntry(cmd, fire);
       break;
       case 0:
-        ptxt("[not found]\r\n>");
+        ptxt("[not found]");
       break;
       default:
-        ptxt("[Found ");txt(hits);ptxt("]\r\n>");
-        ptxt("[keyword ambiguous]\r\n>");
+        ptxt("[found ");txt(hits);ptxt("]");
       break;
     }
     return;
   }
-  ptxt("\r\n[keyword too long]\r\n>");
+  ptxt("\r\n[too long");
 }
 
-void changePass()
+bool changePass()
 {
   char newPassA[33];
   char newPassB[33];
   char oldPass[33];
   
   cls();
-  ptxt("WARNING: This re-encrypts data, it takes around 3 seconds per account.\r\nIf power is lost while re-encrypting, data will be lost.\r\nDon't forget your new psw.\r\nAre you sure [y/n] ?");
+  ptxt("DANGER: Re-encrypts data.\r\nData will be lost if interrupted.\r\nContinue [y/N] ?");
   if( getOneChar() == 'y' )
   {
 
     if(btnWait(BTN_TIMEOUT_IMPORTANT) )
     {
-      ptxtln("\r\nCurrent psw:");
+      ptxt("\r\nCur psw:");
       getStr( oldPass, 32, 0 );
       if( ES.unlock( (byte*)oldPass ) )
       {
-        ptxtln("\r\nNew psw:");
+        ptxt("New psw:");
         if( getStr(newPassA, 32,0 ) )
         {
-          ptxt("\r\nRepeat:");
+          ptxt("\r\nAgain:");
           if( getStr(newPassB, 32,0 ) )
           {
             if(memcmp(newPassA,newPassB,32)==0)
             {
               ptxtln("\r\nDo not disconnect.");
               ES.changePass( (byte*)newPassA, (byte*)oldPass );
-              return;
+              return(1);
             }
           }
         }      
@@ -1226,13 +1051,11 @@ void changePass()
     }
   }
   
-  ptxtln("\r\n[abort]");
-  
+  return(0);
 }
 
 
-
-void repeatEntry(uint8_t show)
+void repeatEntry(bool show)
 {
   uint8_t i,cur;
   char eName[33];
@@ -1286,7 +1109,7 @@ void repeatEntry(uint8_t show)
           break;
         }
 
-        ptxt( "]\r\n");
+        ptxt( "]");
       }
     }
  
@@ -1301,15 +1124,15 @@ void repeatEntry(uint8_t show)
       {
         i=cur;
       } else {
-        ptxt("[abort]\r\n>");
+        printAbort();
         return;
       }
     } else {
       i=cur;
     }
-    fireEntry(lastEntryCmd[i], lastEntryNum[i], 0 );    
+    fireEntry(lastEntryCmd[i], lastEntryNum[i] );    
   } else {
-    ptxt("\r\n[not set]\r\n>");
+    ptxtln("\r\n[none yet]");
   }
 }
 
@@ -1320,14 +1143,6 @@ void loop()
   char cmd[4];
   uint8_t p=0;
   uint8_t cmdType=0;
-  uint8_t btnCoolDown=200;
-  
-
-  macroNum = -1;
-
-
-
- // beat();
 
 
   //Wait for serial connection
@@ -1339,15 +1154,16 @@ void loop()
   //If the firmware flash function is enabled, warn the user about it.
   if( eeprom_read_byte((uint8_t*)0) != 'F' )
   {
-    ptxtln("[NOTE: flash unlocked]");
+    ptxtln("[Flashable]");
   }
   //Greet user
-  ptxt("The Final Key\r\n#");
-
+  ptxt("Final Key+\r\n#");
+  
   if( !btnWait(BTN_TIMEOUT_NO_TIMEOUT) )
   {
     return;
   }
+
 
   
   //Turn on power to EEPROM
@@ -1357,7 +1173,8 @@ void loop()
   //Login procedure
   if( login(1) )
   {
-    ptxt("Space for quickhelp\r\n>");
+  
+    ptxt("Space = quickhelp\r\n>");
     
     //Interpret commands and call appropiate functions.
     while(Serial)
@@ -1373,9 +1190,9 @@ void loop()
        //Handle backspace, we abort whatever was going on.
        if(cmd[p]==8)
        {
-        Serial.write('\r');
-        Serial.write(27);
-        Serial.write("[K>");
+         Serial.write('\r');
+         Serial.write(27);
+         Serial.write("[K");
         p=0;
        } else {
          p++;
@@ -1388,22 +1205,22 @@ void loop()
          if(cmd[0]==' ')
          {
            cls();
-           ptxt("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n s  Show\r\n r  Repeat recent\r\n R  Repeat last\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n ENTER  Search\r\n>");
+           ptxtln("The Final Key\r\n-------------\r\n u  Usr\r\n p  Psw\r\n %  Usr+Psw\r\n s  Show\r\n r  Repeat list\r\n R  Repeat last\r\n j  list <\r\n k  list \r\n l  list >\r\n q  Lock\r\n h  Help\r\n ENTER  Search");
            p=0;
          } else if(cmd[0]=='u')
          {
            Serial.write('%');
-           fireEntry(CMD_FIRE_USER, collectNum(), 0 );
+           fireEntry(CMD_FIRE_USER, collectNum() );
            p=0;
          } else if(cmd[0]=='p')
          {
            Serial.write('%');
-           fireEntry(CMD_FIRE_PASS, collectNum(), 0 );
+           fireEntry(CMD_FIRE_PASS, collectNum() );
            p=0;           
          } else if( cmd[0] == 's' )
          {
            Serial.write('%');
-           fireEntry(CMD_SHOW_BOTH, collectNum(), 0 );
+           fireEntry(CMD_SHOW_BOTH, collectNum() );
 
            p=0;
          } else if( cmd[0] == 'j' )
@@ -1423,21 +1240,17 @@ void loop()
            cls();
            ES.lock();
            ptxt("[lock]");
-           delay(500);
+           delay(2000);
            return;
          } else if( cmd[0] == 'h' )
          {
            cls();
-           ptxt("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTs  Search and show\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xm  New macro\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xu  Choose # macro\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key\r\n % = Number  : = Text Input\r\n ENT = ENTER > = Command\r\n ------------\r\n>");
+           ptxtln("Help\r\n----\r\n Space  quickhelp\r\n ENTu  Search and trig usr\r\n ENTp  Search and trig psw\r\n ENTs  Search and show\r\n ENTENT  Search and trig both\r\n xa  New account\r\n xf  Format\r\n xp  Change psw\r\n xd  Delete\r\n xo  Override\r\n xb  Set banner\r\n xk  Set keyboard layout\r\n ------------\r\n # = Button on The Final Key\r\n % = Number  : = Text Input\r\n ENT = ENTER > = Command\r\n ------------");
            p=0;
          } else if( isHex(cmd[0]) )
          {
            cmdType=CMD_FIRE_BOTH;
-         } else if ( cmd[0] == '%' )
-         {
-           ptxt("\rYou don't need to type % for user+pass, just type the account number.\r\n>");
-           p=0;
-         } else if( cmd[0] == 'x' )
+          } else if( cmd[0] == 'x' )
          {
            cmdType=CMD_EXTENDED;
          } else if( cmd[0] == 13 )
@@ -1457,7 +1270,7 @@ void loop()
            repeatEntry(0);
            p=0;
          } else {
-           ptxt("[unknown]\r\n>");
+           ptxt("\r\n[unknown]");
            p=0;
          }
        } else
@@ -1468,7 +1281,7 @@ void loop()
          {
            if(isHex(cmd[1]))
            {
-             fireEntry(CMD_FIRE_BOTH, strToHex(cmd), 0 );
+             fireEntry(CMD_FIRE_BOTH, strToHex(cmd));
              p=0;
            }
          } else if( cmdType==CMD_EXTENDED )
@@ -1478,31 +1291,30 @@ void loop()
              case 'a':
                newAccount(-1);
              break;
-             case 'm':
-               newMacro(-1);
-             break;
              case 'f':
                cls();
-               ptxt("WARNING: DESTROYS ALL DATA!\r\nAre you sure [y/n] ?");
+               ptxt("WARNING: DESTROYS ALL DATA!\r\nSure [y/N] ?");
                if(getOneChar() == 'y' && btnWait(BTN_TIMEOUT_IMPORTANT) )
                {
                  ES.lock();
-                 ptxt("\r\nCurrent psw:");
+                 ptxt("\r\nCur psw:");
                  if( login(0) )
                  {
                    ptxt("\r\n");
                    format();
                  } else {
-                   ptxt("\r\nWrong password\r\n[lock]");
-                   delay(1000);
                    return;
                  }
                } else {
-                ptxtln("\r\n[abort]"); 
+                printAbort();
                }
              break;
              case 'p':
-               changePass();
+               if(!changePass())
+               {
+                 ES.lock();
+                 return;
+               }
              break;
              case 'd':
                txt("%");
@@ -1515,10 +1327,6 @@ void loop()
              case 'b':
                txt(':');
                setBanner();
-             break;
-             case 'u':
-               txt('%');
-               setMacro();
              break;
              case 'k':
                getKbLayout();
@@ -1541,10 +1349,9 @@ void loop()
              break;
                default:
                ptxtln("[unknown]");
-              break;
+             break;
            }
            
-           Serial.print(F("\r\n>"));
            p=0;
          } else if( cmdType == CMD_SEARCH_TRIG )
          {
@@ -1555,14 +1362,14 @@ void loop()
            } else if( cmd[1] == 'p' )
            {
              search(CMD_FIRE_PASS);
-           } else if( cmd[1] == 13 )
+           } else if( cmd[1] == 13 ) //Enter key
            {
              search(CMD_FIRE_BOTH);
            } else if( cmd[1] == 's' )
            {
              search(CMD_SHOW_BOTH);
            } else {
-             ptxt("\r\n[abort]\r\n>");
+             ptxt("\r\n[abort]");
            }
          } else if( cmdType == CMD_ROBOT )
          {
@@ -1572,11 +1379,11 @@ void loop()
                ptxtln("[RDY]");
                if( btnWait(BTN_TIMEOUT_IMPORTANT) )
                {
-                 ptxtln("[OK]");
+                 printOk();
                  ES.importData();
                  return;
                } else {
-                 ptxtln("[NO]");
+                 printError();
                }
                p=0;
              break;
@@ -1584,10 +1391,10 @@ void loop()
              ptxtln("[RDY]");
              if( btnWait(BTN_TIMEOUT_IMPORTANT) )
              {
-               ptxtln("[OK]");
+               printOk();
                ES.exportData();
              } else {
-               ptxtln("[NO]");
+               printError();
              }
              break;
              case 'l': //List for machines
@@ -1601,27 +1408,17 @@ void loop()
              break;
            }
          }
-
+         
          p=0;
        } //Second character 
-       btnCoolDown=500;
+
+        if(p==0)
+        {
+          txt(">");
+        }
        
       } //Incoming char
       
-      //We detect macro btn press here
-      if( !digitalRead(btnPin) && btnCoolDown == 0 )
-      {
-        btnCoolDown=20;
-        if( macroNum != -1 )
-        {
-          fireEntry(CMD_FIRE_BOTH,macroNum, 1);
-        } else {
-          ptxtln("\r\n[not set]");
-        }
-      } else if(btnCoolDown!=0)
-      {
-        btnCoolDown--;
-      }
       
     } //Serial connected
 

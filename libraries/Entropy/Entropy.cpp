@@ -67,7 +67,7 @@ void EntropyClass::initialize(void)
 
 uint32_t EntropyClass::random(void)
 {
-    uint8_t waiting;
+  analogWrite(10, 240);
   while (gWDT_pool_count < 1)
   {
       if( !(_WD_CONTROL_REG&WDIE) )
@@ -83,7 +83,7 @@ uint32_t EntropyClass::random(void)
     gWDT_pool_start = (gWDT_pool_start + 1) % WDT_POOL_SIZE;
     --gWDT_pool_count;
   }
-  
+  digitalWrite(10, 1);
   return(retVal);
 }
 
