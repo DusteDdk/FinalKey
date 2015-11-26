@@ -5,6 +5,7 @@
 #include "keymap-fr.inc"
 #include "keymap-de.inc"
 #include "keymap-se.inc"
+#include "keymap-be.inc"
 
 
 void KeyMaps::setKbMap(uint8_t mapNum)
@@ -74,6 +75,18 @@ void KeyMaps::setKbMap(uint8_t mapNum)
     case KBMAP_SEMAC:
       Keyboard.begin( (uint8_t*)(KBMAP_SEMAC_PTR) );
       ptxtln("SEMAC]");
+    break;
+#endif
+#ifdef KBMAP_BEPC_PTR
+    case KBMAP_BEPC:
+      Keyboard.begin( (uint8_t*)(KBMAP_BEPC_PTR) );
+      ptxtln("BE-PC]");
+    break;
+#endif
+#ifdef KBMAP_BEMAC_PTR
+    case KBMAP_BEMAC:
+      Keyboard.begin( (uint8_t*)(KBMAP_BEMAC_PTR) );
+      ptxtln("BEMAC]");
     break;
 #endif
     default:
