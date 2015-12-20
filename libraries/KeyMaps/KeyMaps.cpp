@@ -6,6 +6,7 @@
 #include "keymap-de.inc"
 #include "keymap-se.inc"
 #include "keymap-be.inc"
+#include "keymap-ee.inc"
 
 
 void KeyMaps::setKbMap(uint8_t mapNum)
@@ -37,6 +38,19 @@ void KeyMaps::setKbMap(uint8_t mapNum)
     case KBMAP_DKMAC:
       Keyboard.begin( (uint8_t*)(KBMAP_DKMAC_PTR) );
       ptxtln("DKMAC]");
+    break;
+#endif
+
+#ifdef KBMAP_EEPC_PTR
+    case KBMAP_EEPC:
+      Keyboard.begin( (uint8_t*)(KBMAP_EEPC_PTR) );
+      ptxtln("EEPC]");
+    break;
+#endif
+#ifdef KBMAP_EEMAC_PTR
+    case KBMAP_EEMAC:
+      Keyboard.begin( (uint8_t*)(KBMAP_EEMAC_PTR) );
+      ptxtln("EEMAC]");
     break;
 #endif
 
