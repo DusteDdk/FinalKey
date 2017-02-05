@@ -81,7 +81,7 @@ uint16_t I2ceep::dataOp(uint16_t eeaddress, byte* data, uint8_t len, uint8_t wri
 
    //I observed that there were no errors after successive writing if having 4ms pause,
    //with the eeproms I use, there were at 3 ms though, so I give it an extra ms to be sure.
-   delay(4);
+   delay(8);
     
 ///    Serial.print(lenForPage);Serial.print(" bytes from address ");Serial.print(eeaddress);
 ///    Serial.print("\r\n");
