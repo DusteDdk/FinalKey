@@ -24,3 +24,6 @@ File                            - Description           - Author                
 finalkeybackup.c                - Backup program        - DusteD                - WTFPL         - http://finalkey.net/
 </pre>
 
+Donate to FinalKey project
+===
+If you enjoy having your passwords safely encrypted on an external device, consider donating a few Dogecoin to my wallet at: DHu41ELvTho6SUiuNDnyQYdDmDrYiWZuvR
